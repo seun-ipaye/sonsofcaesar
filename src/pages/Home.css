@@ -1,0 +1,40 @@
+.home {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: calc(100vh - 220px);
+}
+
+.home-photo {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.home-text p {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  margin: 0 0 2.5rem;
+  opacity: 0.85;
+}
+
+.home-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .home {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    min-height: 0;
+  }
+
+  .home-buttons {
+    flex-direction: column;
+  }
+}

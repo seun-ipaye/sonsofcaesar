@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router'
+import { Outlet, useLocation, useNavigate, useOutletContext } from 'react-router'
 import { PAGES, type Page } from './Intro'
 import Footer from './Footer'
 import './Site.css'
@@ -64,10 +64,15 @@ export default function Site() {
       </div>
 
       <main className={`page ${fading ? 'fading' : ''}`} key={page}>
-        <Outlet />
+        <Outlet context={go} />
       </main>
 
       <Footer />
     </div>
   )
+}
+
+// Lets pages navigate with the same fade as the header links
+export function useGo() {
+  return useOutletContext<(page: Page) => void>()
 }

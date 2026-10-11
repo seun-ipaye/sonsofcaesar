@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Original gallery photos/videos (uploaded to R2 by script, never committed)
+gallery-source/
