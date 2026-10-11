@@ -1,0 +1,38 @@
+.intro {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  background: #000;
+}
+
+.intro-gif {
+  width: min(300px, 90vw);
+  height: auto;
+}
+
+.enter {
+  background: none;
+  border: 1px solid #fff;
+  color: #fff;
+  padding: 0.6rem 2rem;
+  font: inherit;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.6s ease,
+    background 0.2s,
+    color 0.2s;
+}
+
+.enter.visible {
+  opacity: 1;
+}
+.enter:hover {
+  background: #fff;
+  color: #000;
+}
