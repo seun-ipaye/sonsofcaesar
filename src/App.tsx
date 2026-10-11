@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import Intro from './Intro'
+import Intro, { type Page } from './Intro'
 
 export default function App() {
-  const [entered, setEntered] = useState(false)
+  const [page, setPage] = useState<Page | null>(null)
 
-  if (!entered) return <Intro onEnter={() => setEntered(true)} />
+  if (!page) return <Intro onSelect={setPage} />
 
-  return <main className="home" />
+  return <main className="page">{page}</main>
 }

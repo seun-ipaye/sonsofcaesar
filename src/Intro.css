@@ -13,7 +13,21 @@
   height: auto;
 }
 
+/* Stack the enter button and the menu in the same grid cell */
+.controls {
+  display: grid;
+  width: 220px;
+}
+
+.controls > * {
+  grid-area: 1 / 1;
+}
+
 .enter {
+  align-self: start;
+  justify-self: stretch;
+  width: 100%;
+  text-align: center;
   background: none;
   border: 1px solid #fff;
   color: #fff;
@@ -22,17 +36,36 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   cursor: pointer;
-  opacity: 0;
   transition:
-    opacity 0.6s ease,
     background 0.2s,
     color 0.2s;
 }
 
-.enter.visible {
-  opacity: 1;
-}
 .enter:hover {
   background: #fff;
   color: #000;
+}
+
+/* Fade the enter button and the menu in/out */
+.controls > .enter,
+.menu {
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--fade) ease,
+    background 0.2s,
+    color 0.2s;
+}
+
+.controls > .enter.visible,
+.menu.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
 }
