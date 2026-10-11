@@ -11,10 +11,20 @@ export type Page = (typeof PAGES)[number]
 // enter:   enter button visible
 // leaving: enter button fading out
 // menu:    the four options visible
-type Phase = 'waiting' | 'enter' | 'leaving' | 'menu'
+// exiting: whole screen fading to black before the site appears
+type Phase = 'waiting' | 'enter' | 'leaving' | 'menu' | 'exiting'
 
-export default function Intro({ onSelect }: { onSelect: (page: Page) => void }) {
+type Props = {
+  onSelect: (page: Page) => void
+}
+
+export default function Intro({ onSelect }: Props) {
   const [phase, setPhase] = useState<Phase>('waiting')
+
+  const select = (page: Page) => {
+    setPhase('exiting')
+    setTimeout(() => onSelect(page), FADE_MS)
+  }
 
   useEffect(() => {
     const t = setTimeout(() => setPhase('enter'), GIF_DURATION_MS)
@@ -28,7 +38,7 @@ export default function Intro({ onSelect }: { onSelect: (page: Page) => void }) 
   }, [phase])
 
   return (
-    <div className="intro" style={{ '--fade': `${FADE_MS}ms` } as React.CSSProperties}>
+    <div className={`intro ${phase === 'exiting' ? 'exiting' : ''}`} style={{ '--fade': `${FADE_MS}ms` } as React.CSSProperties}>
       <img className="intro-gif" src="/intro.gif" alt="Sons of Caesar" />
       {/* Both layers always occupy the same space, so the gif never moves */}
       <div className="controls">
@@ -44,7 +54,7 @@ export default function Intro({ onSelect }: { onSelect: (page: Page) => void }) 
             <button
               key={page}
               className="enter"
-              onClick={() => onSelect(page)}
+              onClick={() => select(page)}
               disabled={phase !== 'menu'}
             >
               {page}

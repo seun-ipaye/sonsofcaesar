@@ -6,6 +6,11 @@
   justify-content: center;
   gap: 2rem;
   background: #000;
+  transition: opacity var(--fade) ease;
+}
+
+.intro.exiting {
+  opacity: 0;
 }
 
 .intro-gif {
