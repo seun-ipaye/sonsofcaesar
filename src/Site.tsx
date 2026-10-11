@@ -1,15 +1,16 @@
 import { useState } from 'react'
+import { Outlet, useLocation, useNavigate } from 'react-router'
 import { PAGES, type Page } from './Intro'
+import Footer from './Footer'
 import './Site.css'
 
 const FADE_MS = 500
 
-type Props = {
-  page: Page
-  onNavigate: (page: Page) => void
-}
-
-export default function Site({ page, onNavigate }: Props) {
+// Shared layout for every page after the intro: header, page content, footer
+export default function Site() {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const page = pathname.slice(1)
   const [fading, setFading] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -19,7 +20,8 @@ export default function Site({ page, onNavigate }: Props) {
     if (p === page || fading) return
     setFading(true)
     setTimeout(() => {
-      onNavigate(p)
+      navigate(`/${p}`)
+      window.scrollTo(0, 0)
       setFading(false)
     }, FADE_MS)
   }
@@ -62,8 +64,10 @@ export default function Site({ page, onNavigate }: Props) {
       </div>
 
       <main className={`page ${fading ? 'fading' : ''}`} key={page}>
-        {page}
+        <Outlet />
       </main>
+
+      <Footer />
     </div>
   )
 }

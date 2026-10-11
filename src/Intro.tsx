@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router'
 import './Intro.css'
 
 const GIF_DURATION_MS = 2000
@@ -14,16 +15,13 @@ export type Page = (typeof PAGES)[number]
 // exiting: whole screen fading to black before the site appears
 type Phase = 'waiting' | 'enter' | 'leaving' | 'menu' | 'exiting'
 
-type Props = {
-  onSelect: (page: Page) => void
-}
-
-export default function Intro({ onSelect }: Props) {
+export default function Intro() {
   const [phase, setPhase] = useState<Phase>('waiting')
+  const navigate = useNavigate()
 
   const select = (page: Page) => {
     setPhase('exiting')
-    setTimeout(() => onSelect(page), FADE_MS)
+    setTimeout(() => navigate(`/${page}`), FADE_MS)
   }
 
   useEffect(() => {
