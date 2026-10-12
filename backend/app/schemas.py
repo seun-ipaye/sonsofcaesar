@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 TierStatus = Literal['on_sale', 'sold_out', 'not_yet', 'ended']
 
@@ -32,3 +32,20 @@ class EventOut(BaseModel):
     ends_at: datetime | None
     currency: str = 'cad'
     tiers: list[TierOut]
+
+
+class CheckoutItem(BaseModel):
+    tier_id: int
+    quantity: int = Field(ge=1, le=20)
+
+
+class CheckoutIn(BaseModel):
+    event_slug: str
+    items: list[CheckoutItem] = Field(min_length=1, max_length=10)
+    name: str = Field(min_length=1, max_length=200)
+    email: EmailStr
+
+
+class CheckoutOut(BaseModel):
+    order_id: str
+    checkout_url: str

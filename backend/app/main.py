@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from app.config import settings
 from app.db import engine
-from app.routes import events
+from app.routes import checkout, events
 
 ALEMBIC_INI = Path(__file__).resolve().parent.parent / 'alembic.ini'
 
@@ -35,6 +35,7 @@ app.add_middleware(
 )
 
 app.include_router(events.router)
+app.include_router(checkout.router)
 
 
 @app.get('/health')
