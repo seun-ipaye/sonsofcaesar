@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -9,7 +10,17 @@ from sqlalchemy import text
 
 from app.config import settings
 from app.db import engine
-from app.routes import checkout, events
+from app.routes import checkout, events, webhooks
+
+# Show our own log lines (payments, refunds) in the terminal and Railway's logs.
+# Attached to our "app" logger directly, since uvicorn sets up logging its own way.
+_log = logging.getLogger('app')
+_log.setLevel(logging.INFO)
+if not _log.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter('%(levelname)s:     %(name)s: %(message)s'))
+    _log.addHandler(_handler)
+    _log.propagate = False  # don't print each line twice
 
 ALEMBIC_INI = Path(__file__).resolve().parent.parent / 'alembic.ini'
 
@@ -36,6 +47,7 @@ app.add_middleware(
 
 app.include_router(events.router)
 app.include_router(checkout.router)
+app.include_router(webhooks.router)
 
 
 @app.get('/health')

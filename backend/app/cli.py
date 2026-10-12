@@ -218,6 +218,31 @@ def list_events():
         typer.echo()
 
 
+# ---------- orders ----------
+
+
+@cli.command()
+def sync_order(order_id: str):
+    """Ask Stripe whether an order was paid, and issue its tickets if so.
+    Use it if a buyer says they paid but got nothing (e.g. a missed webhook)."""
+    import stripe
+
+    from app.config import settings
+    from app.fulfillment import fulfill_order
+    from app.models import Order
+
+    with SessionLocal() as db:
+        order = db.get(Order, order_id)
+        if not order or not order.stripe_session_id:
+            typer.secho('No such order (or it never reached Stripe).', fg='red')
+            raise typer.Exit(1)
+        session = stripe.checkout.Session.retrieve(order.stripe_session_id, api_key=settings.stripe_secret_key)
+        typer.echo(f'Stripe says: {session.payment_status} ({session.status}); our status: {order.status.value}')
+        if session.payment_status == 'paid':
+            order = fulfill_order(db, str(order.id), session.payment_intent, session.amount_total)
+            typer.secho(f'Order is {order.status.value} with {len(order.tickets)} tickets', fg='green')
+
+
 # ---------- staff ----------
 
 
