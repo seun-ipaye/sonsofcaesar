@@ -5,11 +5,15 @@ import './NavButton.css'
 // Pages that aren't open yet: hover/tap shows "coming soon" instead of navigating.
 export const COMING_SOON: Page[] = []
 
+// In-house ticketing is switched on per environment (VITE_IN_HOUSE_TICKETS in
+// .env.development / .env.production). While it's off, Tickets goes to Bloom.
+export const IN_HOUSE_TICKETS = import.meta.env.VITE_IN_HOUSE_TICKETS === 'true'
+
 // Pages that live on another site: the button opens it in a new tab.
 // Remove a page from here to use our own page again.
-export const EXTERNAL: Partial<Record<Page, string>> = {
-  tickets: 'https://sons-of-caesar.bloomtickets.ca/hostinfo/924',
-}
+export const EXTERNAL: Partial<Record<Page, string>> = IN_HOUSE_TICKETS
+  ? {}
+  : { tickets: 'https://sons-of-caesar.bloomtickets.ca/hostinfo/924' }
 
 type Props = {
   page: Page

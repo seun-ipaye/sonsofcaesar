@@ -124,3 +124,31 @@ def test_stripe_failure_holds_nothing(db, event, monkeypatch):
     r = buy([{'tier_id': tier_id(db, 'GA'), 'quantity': 1}])
     assert r.status_code == 502
     assert db.query(Order).count() == 0
+
+
+def test_cancel_releases_hold(db, event, monkeypatch):
+    expired = []
+    monkeypatch.setattr(stripe.checkout.Session, 'expire', lambda sid, **kw: expired.append(sid))
+    vip = tier_id(db, 'VIP')
+    order_id = buy([{'tier_id': vip, 'quantity': 1}]).json()['order_id']
+    # The only VIP is held, so a second buyer is turned away...
+    assert buy([{'tier_id': vip, 'quantity': 1}], email='b@example.com').status_code == 409
+
+    r = TestClient(app).post(f'/checkout/{order_id}/cancel')
+    assert r.json() == {'released': True}
+    assert expired == ['cs_test_1']
+    # ...until the first buyer backs out
+    assert buy([{'tier_id': vip, 'quantity': 1}], email='b@example.com').status_code == 200
+    # Cancelling twice (or a paid order) does nothing
+    assert TestClient(app).post(f'/checkout/{order_id}/cancel').json() == {'released': False}
+
+
+def test_cancel_does_nothing_if_stripe_refuses(db, event, monkeypatch):
+    def refuse(sid, **kw):
+        raise stripe.InvalidRequestError('already complete', None)
+
+    monkeypatch.setattr(stripe.checkout.Session, 'expire', refuse)
+    order_id = buy([{'tier_id': tier_id(db, 'GA'), 'quantity': 1}]).json()['order_id']
+    assert TestClient(app).post(f'/checkout/{order_id}/cancel').json() == {'released': False}
+    db.expire_all()
+    assert db.get(Order, order_id).status == OrderStatus.pending

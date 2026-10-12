@@ -3,6 +3,7 @@
 Tickets themselves are only created once Stripe confirms payment (the webhook, step 6).
 """
 
+import uuid
 from datetime import UTC, datetime, timedelta
 
 import stripe
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import get_db
 from app.inventory import remaining, taken_counts
-from app.models import Event, Order, OrderItem, TicketType
+from app.models import Event, Order, OrderItem, OrderStatus, TicketType
 from app.pricing import service_fee_cents
 from app.routes.events import tier_status, upcoming_on_sale
 from app.schemas import CheckoutIn, CheckoutOut
@@ -58,7 +59,7 @@ def create_stripe_session(order: Order, event: Event, tiers: dict[int, TicketTyp
         payment_intent_data={'metadata': {'order_id': str(order.id)}},
         expires_at=int((datetime.now(UTC) + timedelta(minutes=STRIPE_SESSION_MINUTES)).timestamp()),
         success_url=f'{settings.site_url}/order/{order.id}',
-        cancel_url=f'{settings.site_url}/tickets?cancelled=1',
+        cancel_url=f'{settings.site_url}/tickets?cancelled={order.id}',
     )
 
 
@@ -137,3 +138,21 @@ def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
     order.stripe_session_id = session.id
     db.commit()  # saves the hold and releases the lock
     return CheckoutOut(order_id=str(order.id), checkout_url=session.url)
+
+
+@router.post('/{order_id}/cancel')
+def cancel_checkout(order_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Buyer clicked "back" on Stripe: close their payment page and release the hold
+    now, instead of keeping the tickets off sale for 30 minutes."""
+    order = db.scalar(select(Order).where(Order.id == order_id).with_for_update())
+    if not order or order.status != OrderStatus.pending:
+        return {'released': False}
+    try:
+        stripe.checkout.Session.expire(order.stripe_session_id, api_key=settings.stripe_secret_key)
+    except stripe.InvalidRequestError:
+        # Stripe won't expire it, e.g. they actually paid in another tab. Leave it alone.
+        db.rollback()
+        return {'released': False}
+    order.status = OrderStatus.expired
+    db.commit()
+    return {'released': True}

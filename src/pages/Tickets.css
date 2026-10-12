@@ -1,11 +1,7 @@
-.tickets-soon {
-  min-height: calc(100vh - var(--header-h) - 160px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 1.25rem;
+.tickets {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-bottom: 4rem;
 }
 
 .tickets-kicker {
@@ -16,15 +12,214 @@
   opacity: 0.5;
 }
 
-.tickets-soon h1 {
-  margin: 0;
-  font-size: clamp(2.5rem, 8vw, 5.5rem);
-  font-weight: 400;
-  font-style: italic;
-  letter-spacing: 0.02em;
+.tickets-head {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-end;
+  margin-bottom: 3rem;
 }
 
-.tickets-soon a {
+.tickets-poster {
+  width: 180px;
+  height: auto;
+  display: block;
+}
+
+.tickets-head h1 {
+  margin: 0.6rem 0 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+}
+
+.tickets-when {
+  margin: 0.15rem 0;
+  opacity: 0.75;
+}
+
+.tickets-desc {
+  margin-top: 1rem;
+  line-height: 1.7;
+  opacity: 0.8;
+}
+
+.tickets-banner {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.8rem 1rem;
+  margin: 0 0 2rem;
+  font-size: 0.9rem;
+}
+
+/* ---- tiers ---- */
+.tiers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tier {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tier.unavailable {
+  opacity: 0.4;
+}
+
+.tier-name {
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.tier-desc {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-top: 0.3rem;
+}
+
+.tier-note {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  margin-top: 0.3rem;
+}
+
+.tier-price {
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.stepper button {
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.stepper button:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.stepper span {
+  min-width: 1.6rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- checkout ---- */
+.checkout {
+  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: site-fade-in 0.4s ease;
+}
+
+.totals {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem 1rem;
+  margin: 0 0 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.totals dt,
+.totals dd {
+  margin: 0;
+  opacity: 0.75;
+}
+
+.totals .total {
+  opacity: 1;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.1em;
+}
+
+.checkout label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.checkout input {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  letter-spacing: normal;
+  text-transform: none;
+  padding: 0.75rem;
+}
+
+.checkout input:focus {
+  outline: none;
+  border-color: #fff;
+}
+
+.checkout-hint {
+  margin: -0.4rem 0 0;
+  font-size: 0.75rem;
+  opacity: 0.5;
+}
+
+.checkout-error {
+  margin: 0;
+  color: #ff8a8a;
+}
+
+.checkout-btn {
+  margin-top: 0.5rem;
+  padding: 0.9rem;
+}
+
+.checkout-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.tickets-status {
+  text-align: center;
+  opacity: 0.7;
+  padding: 4rem 0;
+}
+
+.tickets-empty {
+  min-height: calc(100vh - var(--header-h) - 160px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1.25rem;
+}
+
+.tickets-empty h1 {
+  margin: 0;
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+}
+
+.tickets-empty a {
   color: #fff;
   font-size: 0.8rem;
   letter-spacing: 0.2em;
@@ -32,10 +227,28 @@
   opacity: 0.6;
   text-decoration: none;
   border-bottom: 1px solid currentColor;
-  padding-bottom: 2px;
-  transition: opacity 0.2s;
 }
 
-.tickets-soon a:hover {
-  opacity: 1;
+@media (max-width: 768px) {
+  .tickets-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tickets-poster {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .tier {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'info price'
+      'info stepper';
+    gap: 0.6rem 1rem;
+  }
+
+  .tier-info { grid-area: info; }
+  .tier-price { grid-area: price; justify-self: end; }
+  .stepper { grid-area: stepper; justify-self: end; }
 }
