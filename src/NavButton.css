@@ -1,0 +1,83 @@
+/* Both texts sit in the same spot; the button is as wide as the longer one */
+.soon-btn {
+  display: inline-grid !important;
+  place-items: center;
+  cursor: default !important;
+}
+
+.soon-btn > span {
+  grid-area: 1 / 1;
+  transition: opacity 0.35s ease, transform 0.35s ease, filter 0.35s ease;
+}
+
+.soon-text {
+  opacity: 0;
+  transform: translateY(6px);
+  filter: blur(3px);
+  font-style: italic;
+}
+
+/* Hover only on devices that really hover; taps use .showing */
+@media (hover: hover) {
+  .soon-btn:hover .soon-label {
+    opacity: 0;
+    transform: translateY(-6px);
+    filter: blur(3px);
+  }
+  .soon-btn:hover .soon-text {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+.soon-btn.showing .soon-label {
+  opacity: 0;
+  transform: translateY(-6px);
+  filter: blur(3px);
+}
+
+.soon-btn.showing .soon-text {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* Outlined buttons: don't invert to white on hover, it isn't a real link */
+.enter.soon-btn:hover {
+  background: none;
+  color: #fff;
+}
+
+/* Header link: "TICKETS" stays put and a small "coming soon" drops in just
+   below it, so it never overlaps the neighbouring links */
+.header-links .soon-btn {
+  position: relative;
+}
+.header-links .soon-btn .soon-label {
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}
+.header-links .soon-btn .soon-text {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  translate: -50% 0;
+  margin-top: 0.4rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  white-space: nowrap;
+}
+
+/* External links styled like the buttons around them */
+a.nav-external {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+a.nav-external[aria-disabled='true'] {
+  pointer-events: none;
+}

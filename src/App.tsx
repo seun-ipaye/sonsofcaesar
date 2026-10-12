@@ -6,6 +6,13 @@ import Tickets from './pages/Tickets'
 import Gallery from './pages/Gallery'
 import About from './pages/About'
 import Party from './pages/Party'
+import { EXTERNAL } from './NavButton'
+
+// Old /tickets links go straight to the ticketing site
+function ExternalRedirect({ to }: { to: string }) {
+  window.location.replace(to)
+  return null
+}
 
 export default function App() {
   return (
@@ -14,7 +21,7 @@ export default function App() {
       <Route path="/" element={<Intro />} />
       <Route element={<Site />}>
         <Route path="/home" element={<Home />} />
-        <Route path="/tickets" element={<Tickets />} />
+        <Route path="/tickets" element={EXTERNAL.tickets ? <ExternalRedirect to={EXTERNAL.tickets} /> : <Tickets />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/gallery/:party" element={<Party />} />
         <Route path="/about" element={<About />} />

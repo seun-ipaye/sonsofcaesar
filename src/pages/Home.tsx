@@ -1,3 +1,4 @@
+import NavButton from '../NavButton'
 import { useGo } from '../Site'
 import './Home.css'
 
@@ -18,9 +19,7 @@ export default function Home() {
           <button className="enter" onClick={() => go('gallery')}>
             see our events
           </button>
-          <button className="enter" onClick={() => go('tickets')}>
-            tickets
-          </button>
+          <NavButton page="tickets" className="enter" onGo={go} />
         </div>
       </div>
     </section>

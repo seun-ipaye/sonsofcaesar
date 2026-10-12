@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import NavButton from './NavButton'
 import './Intro.css'
 
 const GIF_DURATION_MS = 2000
@@ -49,14 +50,13 @@ export default function Intro() {
         </button>
         <nav className={`menu ${phase === 'menu' ? 'visible' : ''}`}>
           {PAGES.map((page) => (
-            <button
+            <NavButton
               key={page}
+              page={page}
               className="enter"
-              onClick={() => select(page)}
+              onGo={select}
               disabled={phase !== 'menu'}
-            >
-              {page}
-            </button>
+            />
           ))}
         </nav>
       </div>

@@ -51,9 +51,11 @@
   gap: 2rem;
 }
 
-.header-links button {
+.header-links button,
+.header-links a {
   background: none;
   border: none;
+  padding: 1px 6px;
   color: #fff;
   font: inherit;
   letter-spacing: 0.2em;
@@ -64,6 +66,7 @@
 }
 
 .header-links button:hover,
+.header-links a:hover,
 .header-links button.active {
   opacity: 1;
 }

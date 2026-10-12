@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet, useLocation, useNavigate, useOutletContext } from 'react-router'
 import { PAGES, type Page } from './Intro'
 import Footer from './Footer'
+import NavButton from './NavButton'
 import './Site.css'
 
 const FADE_MS = 500
@@ -51,18 +52,14 @@ export default function Site() {
 
         <nav className="header-links">
           {PAGES.map((p) => (
-            <button key={p} className={p === section ? 'active' : ''} onClick={() => go(p)}>
-              {p}
-            </button>
+            <NavButton key={p} page={p} className={p === section ? 'active' : ''} onGo={go} />
           ))}
         </nav>
       </header>
 
       <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
         {PAGES.map((p) => (
-          <button key={p} className="enter" onClick={() => go(p)}>
-            {p}
-          </button>
+          <NavButton key={p} page={p} className="enter" onGo={go} />
         ))}
       </div>
 
