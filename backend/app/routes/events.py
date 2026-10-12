@@ -1,0 +1,81 @@
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app.db import get_db
+from app.inventory import remaining, taken_counts
+from app.models import Event, TicketType
+from app.pricing import service_fee_cents
+from app.schemas import EventOut, TierOut, TierStatus
+
+router = APIRouter(prefix='/events', tags=['events'])
+
+
+def tier_status(tier: TicketType, left: int, now: datetime) -> TierStatus:
+    if tier.sales_start and now < tier.sales_start:
+        return 'not_yet'
+    if tier.sales_end and now >= tier.sales_end:
+        return 'ended'
+    if left <= 0:
+        return 'sold_out'
+    return 'on_sale'
+
+
+def event_out(db: Session, event: Event) -> EventOut:
+    now = datetime.now(UTC)
+    tiers = [t for t in event.ticket_types if t.active]
+    taken = taken_counts(db, [t.id for t in tiers])
+    return EventOut(
+        slug=event.slug,
+        name=event.name,
+        description=event.description,
+        venue=event.venue,
+        poster_url=event.poster_url,
+        starts_at=event.starts_at,
+        ends_at=event.ends_at,
+        tiers=[
+            TierOut(
+                id=t.id,
+                name=t.name,
+                description=t.description,
+                price_cents=t.price_cents,
+                fee_for_one_cents=service_fee_cents(t.price_cents),
+                max_per_order=t.max_per_order,
+                remaining=remaining(t, taken[t.id]),
+                status=tier_status(t, remaining(t, taken[t.id]), now),
+                sales_start=t.sales_start,
+                sales_end=t.sales_end,
+            )
+            for t in tiers
+        ],
+    )
+
+
+def upcoming_on_sale(db: Session):
+    now = datetime.now(UTC)
+    # Still upcoming or happening now (ends_at if set, otherwise starts_at)
+    return (
+        select(Event)
+        .where(Event.on_sale, func.coalesce(Event.ends_at, Event.starts_at) > now)
+        .order_by(Event.starts_at)
+    )
+
+
+@router.get('/current', response_model=EventOut)
+def current_event(db: Session = Depends(get_db)):
+    """The next event that's on sale: what the /tickets page shows."""
+    event = db.scalars(upcoming_on_sale(db).limit(1)).first()
+    if not event:
+        raise HTTPException(404, 'No event on sale right now')
+    return event_out(db, event)
+
+
+@router.get('/{slug}', response_model=EventOut)
+def get_event(slug: str, db: Session = Depends(get_db)):
+    """A specific on-sale event, for direct links."""
+    event = db.scalars(upcoming_on_sale(db).where(Event.slug == slug)).first()
+    if not event:
+        raise HTTPException(404, 'Event not found')
+    return event_out(db, event)
