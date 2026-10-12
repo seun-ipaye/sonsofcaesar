@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "gallery": "node --env-file=.env.local scripts/upload-gallery.mjs"
+    "gallery": "node --env-file=.env.local scripts/upload-gallery.mjs",
+    "hero": "node --env-file=.env.local scripts/upload-hero.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
@@ -21,6 +22,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "ffmpeg-static": "^5.3.0",
     "oxlint": "^1.81.0",
     "sharp": "^0.35.5",
     "typescript": "~6.0.2",

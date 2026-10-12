@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import Tickets from './pages/Tickets'
 import Gallery from './pages/Gallery'
 import About from './pages/About'
+import Party from './pages/Party'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/tickets" element={<Tickets />} />
         <Route path="/gallery" element={<Gallery />} />
+        <Route path="/gallery/:party" element={<Party />} />
         <Route path="/about" element={<About />} />
       </Route>
       {/* Unknown addresses go back to the intro */}

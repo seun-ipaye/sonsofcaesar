@@ -10,14 +10,17 @@ const FADE_MS = 500
 export default function Site() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const page = pathname.slice(1)
+  // "/gallery/on-deck" -> path "gallery/on-deck", section "gallery"
+  const path = pathname.slice(1)
+  const section = path.split('/')[0]
   const [fading, setFading] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // Fade the page out to black, swap it, then the new page fades in
-  const go = (p: Page) => {
+  // Fade the page out to black, swap it, then the new page fades in.
+  // Takes a page name or a deeper path like "gallery/on-deck".
+  const go = (p: Page | string) => {
     setMenuOpen(false)
-    if (p === page || fading) return
+    if (p === path || fading) return
     setFading(true)
     setTimeout(() => {
       navigate(`/${p}`)
@@ -48,7 +51,7 @@ export default function Site() {
 
         <nav className="header-links">
           {PAGES.map((p) => (
-            <button key={p} className={p === page ? 'active' : ''} onClick={() => go(p)}>
+            <button key={p} className={p === section ? 'active' : ''} onClick={() => go(p)}>
               {p}
             </button>
           ))}
@@ -63,7 +66,7 @@ export default function Site() {
         ))}
       </div>
 
-      <main className={`page ${fading ? 'fading' : ''}`} key={page}>
+      <main className={`page ${fading ? 'fading' : ''}`} key={path}>
         <Outlet context={go} />
       </main>
 
@@ -74,5 +77,5 @@ export default function Site() {
 
 // Lets pages navigate with the same fade as the header links
 export function useGo() {
-  return useOutletContext<(page: Page) => void>()
+  return useOutletContext<(page: Page | string) => void>()
 }

@@ -4,34 +4,14 @@
       "folder": "ON DECK",
       "photos": [
         {
-          "source": "IMG_0104.JPG",
-          "hash": "36b144a911",
+          "source": "IMG_0001.JPG",
+          "hash": "01ab8bcc5b",
           "width": 800,
           "height": 600,
-          "color": "rgb(8, 8, 8)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0104-36b144a911-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0104-36b144a911-full.webp",
-          "bytes": 1464116
-        },
-        {
-          "source": "IMG_0105.JPG",
-          "hash": "23ad4ea73a",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(8, 8, 8)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0105-23ad4ea73a-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0105-23ad4ea73a-full.webp",
-          "bytes": 1289546
-        },
-        {
-          "source": "IMG_0106.JPG",
-          "hash": "114a8ab007",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(120, 120, 120)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0106-114a8ab007-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0106-114a8ab007-full.webp",
-          "bytes": 1582105
+          "color": "rgb(24, 24, 24)",
+          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0001-01ab8bcc5b-thumb.webp",
+          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0001-01ab8bcc5b-full.webp",
+          "bytes": 1344455
         },
         {
           "source": "IMG_0107.JPG",
@@ -164,16 +144,6 @@
           "bytes": 2692577
         },
         {
-          "source": "IMG_0120.JPG",
-          "hash": "1dd02f2f8f",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(8, 8, 8)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0120-1dd02f2f8f-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0120-1dd02f2f8f-full.webp",
-          "bytes": 3102182
-        },
-        {
           "source": "IMG_0121.JPG",
           "hash": "03277be36a",
           "width": 800,
@@ -212,16 +182,6 @@
           "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0124-2fcdbc5d04-thumb.webp",
           "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0124-2fcdbc5d04-full.webp",
           "bytes": 2701270
-        },
-        {
-          "source": "IMG_0125.JPG",
-          "hash": "a1620ad0d5",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(152, 152, 152)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0125-a1620ad0d5-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0125-a1620ad0d5-full.webp",
-          "bytes": 3114959
         },
         {
           "source": "IMG_0126.JPG",
@@ -334,26 +294,6 @@
           "bytes": 3435591
         },
         {
-          "source": "IMG_0137.JPG",
-          "hash": "b8d7aa650d",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(24, 24, 24)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0137-b8d7aa650d-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0137-b8d7aa650d-full.webp",
-          "bytes": 3409203
-        },
-        {
-          "source": "IMG_0138.JPG",
-          "hash": "bc451cbca8",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(40, 40, 40)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0138-bc451cbca8-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0138-bc451cbca8-full.webp",
-          "bytes": 3534178
-        },
-        {
           "source": "IMG_0139.JPG",
           "hash": "eb49802eae",
           "width": 800,
@@ -372,16 +312,6 @@
           "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0140-a311053839-thumb.webp",
           "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0140-a311053839-full.webp",
           "bytes": 3089940
-        },
-        {
-          "source": "IMG_0141.JPG",
-          "hash": "945825e5a5",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(24, 24, 24)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0141-945825e5a5-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0141-945825e5a5-full.webp",
-          "bytes": 2914617
         },
         {
           "source": "IMG_0142.JPG",
@@ -412,36 +342,6 @@
           "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0144-0b486e9f07-thumb.webp",
           "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0144-0b486e9f07-full.webp",
           "bytes": 2999101
-        },
-        {
-          "source": "IMG_0145.JPG",
-          "hash": "ba8fed0e42",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(24, 24, 24)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0145-ba8fed0e42-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0145-ba8fed0e42-full.webp",
-          "bytes": 3010401
-        },
-        {
-          "source": "IMG_0146.JPG",
-          "hash": "6f127e7074",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(8, 8, 8)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0146-6f127e7074-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0146-6f127e7074-full.webp",
-          "bytes": 3277922
-        },
-        {
-          "source": "IMG_0150.JPG",
-          "hash": "01ab8bcc5b",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(24, 24, 24)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0150-01ab8bcc5b-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0150-01ab8bcc5b-full.webp",
-          "bytes": 1344455
         },
         {
           "source": "IMG_0151.JPG",
@@ -504,46 +404,6 @@
           "bytes": 2889454
         },
         {
-          "source": "IMG_0157.JPG",
-          "hash": "5177589dca",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(24, 24, 24)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0157-5177589dca-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0157-5177589dca-full.webp",
-          "bytes": 1191980
-        },
-        {
-          "source": "IMG_0158.JPG",
-          "hash": "d40444a727",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(24, 24, 24)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0158-d40444a727-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0158-d40444a727-full.webp",
-          "bytes": 1119991
-        },
-        {
-          "source": "IMG_0160.JPG",
-          "hash": "baaded7959",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(152, 152, 152)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0160-baaded7959-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0160-baaded7959-full.webp",
-          "bytes": 1329225
-        },
-        {
-          "source": "IMG_0161.JPG",
-          "hash": "b212dbde24",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(24, 24, 24)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0161-b212dbde24-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0161-b212dbde24-full.webp",
-          "bytes": 1218358
-        },
-        {
           "source": "IMG_0162.JPG",
           "hash": "48df01e6ec",
           "width": 800,
@@ -552,56 +412,6 @@
           "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0162-48df01e6ec-thumb.webp",
           "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0162-48df01e6ec-full.webp",
           "bytes": 1229446
-        },
-        {
-          "source": "IMG_0163.JPG",
-          "hash": "c019781125",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(24, 24, 24)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0163-c019781125-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0163-c019781125-full.webp",
-          "bytes": 1134901
-        },
-        {
-          "source": "IMG_0164.JPG",
-          "hash": "13154f419b",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(120, 120, 120)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0164-13154f419b-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0164-13154f419b-full.webp",
-          "bytes": 1048086
-        },
-        {
-          "source": "IMG_0165.JPG",
-          "hash": "b7a7478963",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(88, 88, 88)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0165-b7a7478963-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0165-b7a7478963-full.webp",
-          "bytes": 1161107
-        },
-        {
-          "source": "IMG_0166.JPG",
-          "hash": "ee01334821",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(168, 168, 168)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0166-ee01334821-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0166-ee01334821-full.webp",
-          "bytes": 1242756
-        },
-        {
-          "source": "IMG_0167.JPG",
-          "hash": "a62d38df73",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(56, 56, 56)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0167-a62d38df73-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0167-a62d38df73-full.webp",
-          "bytes": 1117683
         }
       ]
     },
@@ -879,16 +689,6 @@
           "bytes": 1015969
         },
         {
-          "source": "IMG_0200.JPG",
-          "hash": "a882b65248",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(8, 8, 8)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/vol-ii/img-0200-a882b65248-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/vol-ii/img-0200-a882b65248-full.webp",
-          "bytes": 812421
-        },
-        {
           "source": "IMG_0201.JPG",
           "hash": "cecd7e9c10",
           "width": 800,
@@ -910,5 +710,11 @@
         }
       ]
     }
+  },
+  "hero": {
+    "video": "https://media.sonsofcaesar.xyz/gallery/hero-074b876b1b.mp4",
+    "poster": "https://media.sonsofcaesar.xyz/gallery/hero-074b876b1b-poster.webp",
+    "width": 1280,
+    "height": 720
   }
 }
