@@ -6,7 +6,9 @@ import './Intro.css'
 const GIF_DURATION_MS = 2000
 const FADE_MS = 500
 
-export const PAGES = ['home', 'tickets', 'gallery', 'about'] as const
+// Pages in the menus. About is hidden for now: add 'about' back here and
+// uncomment its route in App.tsx to bring it back.
+export const PAGES = ['home', 'tickets', 'gallery'] as const
 export type Page = (typeof PAGES)[number]
 
 // waiting: gif playing, nothing shown

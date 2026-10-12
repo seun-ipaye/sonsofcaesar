@@ -4,7 +4,7 @@ import Site from './Site'
 import Home from './pages/Home'
 import Tickets from './pages/Tickets'
 import Gallery from './pages/Gallery'
-import About from './pages/About'
+// import About from './pages/About' (hidden for now)
 import Party from './pages/Party'
 import { EXTERNAL } from './NavButton'
 
@@ -24,7 +24,7 @@ export default function App() {
         <Route path="/tickets" element={EXTERNAL.tickets ? <ExternalRedirect to={EXTERNAL.tickets} /> : <Tickets />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/gallery/:party" element={<Party />} />
-        <Route path="/about" element={<About />} />
+        {/* <Route path="/about" element={<About />} /> (hidden for now) */}
       </Route>
       {/* Unknown addresses go back to the intro */}
       <Route path="*" element={<Navigate to="/" replace />} />

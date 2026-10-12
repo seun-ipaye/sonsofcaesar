@@ -1,0 +1,50 @@
+.about {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding-bottom: 4rem;
+}
+
+/* Text sits in a narrower column than the photos, for easy reading */
+.chapter {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 3rem 0;
+}
+
+.chapter p {
+  font-size: 1.1rem;
+  line-height: 1.85;
+  margin: 0 0 1.25rem;
+  opacity: 0.88;
+}
+
+
+
+.about-photos {
+  display: grid;
+  gap: 6px;
+}
+
+.about-photos.pair {
+  grid-template-columns: 1fr 1fr;
+}
+
+.about-photos img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .chapter {
+    padding: 2rem 0;
+  }
+
+  .chapter p {
+    font-size: 1rem;
+  }
+
+  .about-photos.pair {
+    grid-template-columns: 1fr;
+  }
+}
