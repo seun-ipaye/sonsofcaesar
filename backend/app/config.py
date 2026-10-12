@@ -6,7 +6,9 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
-    database_url: str = 'postgresql+psycopg://localhost/sonsofcaesar_dev'
+    # Required: no default, so a missing variable fails loudly instead of
+    # silently pointing somewhere else
+    database_url: str
     stripe_secret_key: str = ''
     stripe_webhook_secret: str = ''
     resend_api_key: str = ''
