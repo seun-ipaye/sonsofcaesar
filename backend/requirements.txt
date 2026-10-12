@@ -1,0 +1,9 @@
+fastapi[standard]==0.115.12
+sqlalchemy==2.0.40
+alembic==1.15.2
+psycopg[binary]==3.2.6
+pydantic-settings==2.9.1
+stripe==12.0.0
+resend==2.10.0
+segno==1.6.6
+argon2-cffi==23.1.0
