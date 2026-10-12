@@ -57,7 +57,7 @@ def create_stripe_session(order: Order, event: Event, tiers: dict[int, TicketTyp
         metadata={'order_id': str(order.id)},
         payment_intent_data={'metadata': {'order_id': str(order.id)}},
         expires_at=int((datetime.now(UTC) + timedelta(minutes=STRIPE_SESSION_MINUTES)).timestamp()),
-        success_url=f'{settings.site_url}/tickets/success?order={order.id}',
+        success_url=f'{settings.site_url}/order/{order.id}',
         cancel_url=f'{settings.site_url}/tickets?cancelled=1',
     )
 

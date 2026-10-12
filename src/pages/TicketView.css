@@ -1,0 +1,73 @@
+.ticket-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-bottom: 3rem;
+}
+
+.ticket-view h1 {
+  margin: 2rem 0 0.5rem;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  font-size: 1.6rem;
+}
+
+.ticket-when {
+  margin: 0.2rem 0;
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.ticket-message {
+  text-align: center;
+  opacity: 0.7;
+  padding: 4rem 0;
+}
+
+.ticket-card {
+  width: min(320px, 100%);
+  text-align: center;
+}
+
+/* White frame around the QR: scanners need dark-on-light */
+.ticket-qr {
+  position: relative;
+  background: #fff;
+  padding: 12px;
+}
+
+.ticket-qr img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ticket-card.void .ticket-qr img,
+.ticket-card.used .ticket-qr img {
+  opacity: 0.15;
+}
+
+.ticket-stamp {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #000;
+  font-size: 1.4rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.ticket-tier {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.ticket-holder {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  opacity: 0.6;
+}

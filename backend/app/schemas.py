@@ -49,3 +49,31 @@ class CheckoutIn(BaseModel):
 class CheckoutOut(BaseModel):
     order_id: str
     checkout_url: str
+
+
+class TicketOut(BaseModel):
+    code: str
+    tier: str
+    holder_name: str
+    status: str  # valid / void
+    checked_in_at: datetime | None
+
+
+class TicketEventOut(BaseModel):
+    name: str
+    venue: str | None
+    starts_at: datetime
+    ends_at: datetime | None
+
+
+class TicketPageOut(TicketOut):
+    event: TicketEventOut
+
+
+class OrderPageOut(BaseModel):
+    id: str
+    status: str  # pending / paid / expired / refunded
+    buyer_name: str
+    total_cents: int
+    event: TicketEventOut
+    tickets: list[TicketOut]

@@ -111,8 +111,10 @@ class Order(Base):
     currency: Mapped[str] = mapped_column(String(3), default='cad')
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # end of the stock hold
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # tickets email sent
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    event: Mapped[Event] = relationship()
     items: Mapped[list['OrderItem']] = relationship(back_populates='order', cascade='all, delete-orphan')
     tickets: Mapped[list['Ticket']] = relationship(back_populates='order')
 
@@ -150,6 +152,7 @@ class Ticket(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     order: Mapped[Order] = relationship(back_populates='tickets')
+    event: Mapped[Event] = relationship()
     ticket_type: Mapped[TicketType] = relationship()
     checked_in_by: Mapped['Staff | None'] = relationship()
 

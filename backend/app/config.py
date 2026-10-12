@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     resend_api_key: str = ''
     email_from: str = 'Sons of Caesar <tickets@sonsofcaesar.xyz>'
     site_url: str = 'http://localhost:5173'
+    # Where this API is reachable (used for QR image links in emails)
+    api_url: str = 'http://localhost:8000'
     # Websites allowed to call the API from the browser, comma-separated
     cors_origins: str = 'http://localhost:5173'
 

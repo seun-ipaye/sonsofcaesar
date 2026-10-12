@@ -21,3 +21,13 @@ def fresh_tables():
 def db():
     with Session(engine, expire_on_commit=False) as session:
         yield session
+
+
+@pytest.fixture(autouse=True)
+def sent_emails(monkeypatch):
+    """Tests never send real email: capture what would have been sent."""
+    import resend
+
+    sent = []
+    monkeypatch.setattr(resend.Emails, 'send', lambda params: sent.append(params) or {'id': 'test'})
+    return sent

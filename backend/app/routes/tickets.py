@@ -1,0 +1,70 @@
+"""Public ticket and order pages. The ticket code and order id are long random
+strings, so knowing one is what proves you hold it (like a link to a Google Doc)."""
+
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.db import get_db
+from app.models import Order, Ticket
+from app.qr import qr_png, qr_svg
+from app.schemas import OrderPageOut, TicketEventOut, TicketOut, TicketPageOut
+
+router = APIRouter(tags=['tickets'])
+
+# QR images never change for a code, so browsers/email apps can cache them
+IMMUTABLE = {'Cache-Control': 'public, max-age=31536000, immutable'}
+
+
+def _ticket(db: Session, code: str) -> Ticket:
+    ticket = db.scalar(select(Ticket).where(Ticket.code == code))
+    if not ticket:
+        raise HTTPException(404, 'Ticket not found')
+    return ticket
+
+
+def _ticket_out(t: Ticket) -> TicketOut:
+    return TicketOut(
+        code=t.code, tier=t.ticket_type.name, holder_name=t.holder_name,
+        status=t.status.value, checked_in_at=t.checked_in_at,
+    )
+
+
+def _event_out(e) -> TicketEventOut:
+    return TicketEventOut(name=e.name, venue=e.venue, starts_at=e.starts_at, ends_at=e.ends_at)
+
+
+@router.get('/tickets/{code}', response_model=TicketPageOut)
+def get_ticket(code: str, db: Session = Depends(get_db)):
+    t = _ticket(db, code)
+    return TicketPageOut(**_ticket_out(t).model_dump(), event=_event_out(t.event))
+
+
+@router.get('/tickets/{code}/qr.png')
+def ticket_qr_png(code: str, db: Session = Depends(get_db)):
+    _ticket(db, code)  # only draw QRs for real tickets
+    return Response(qr_png(code), media_type='image/png', headers=IMMUTABLE)
+
+
+@router.get('/tickets/{code}/qr.svg')
+def ticket_qr_svg(code: str, db: Session = Depends(get_db)):
+    _ticket(db, code)
+    return Response(qr_svg(code), media_type='image/svg+xml', headers=IMMUTABLE)
+
+
+@router.get('/orders/{order_id}', response_model=OrderPageOut)
+def get_order(order_id: uuid.UUID, db: Session = Depends(get_db)):
+    """The "you're in" page polls this until the payment is confirmed."""
+    order = db.get(Order, order_id)
+    if not order:
+        raise HTTPException(404, 'Order not found')
+    return OrderPageOut(
+        id=str(order.id),
+        status=order.status.value,
+        buyer_name=order.buyer_name,
+        total_cents=order.total_cents,
+        event=_event_out(order.event),
+        tickets=[_ticket_out(t) for t in sorted(order.tickets, key=lambda t: t.ticket_type.sort_order)],
+    )

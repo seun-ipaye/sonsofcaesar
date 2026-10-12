@@ -241,6 +241,23 @@ def sync_order(order_id: str):
         if session.payment_status == 'paid':
             order = fulfill_order(db, str(order.id), session.payment_intent, session.amount_total)
             typer.secho(f'Order is {order.status.value} with {len(order.tickets)} tickets', fg='green')
+            from app.emails import send_tickets_email
+
+            if send_tickets_email(db, str(order.id)):
+                typer.echo('Tickets email sent.')
+
+
+@cli.command()
+def resend_email(order_id: str):
+    """Send the tickets email again (e.g. buyer can't find it, or it failed)."""
+    from app.emails import send_tickets_email
+
+    with SessionLocal() as db:
+        if send_tickets_email(db, order_id, force=True):
+            typer.secho('Sent.', fg='green')
+        else:
+            typer.secho('Not sent: order not found or not paid.', fg='red')
+            raise typer.Exit(1)
 
 
 # ---------- staff ----------
