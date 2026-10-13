@@ -12,6 +12,7 @@
     "hero": "node --env-file=.env.local scripts/upload-hero.mjs"
   },
   "dependencies": {
+    "qr-scanner": "^1.4.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router": "^8.4.0"

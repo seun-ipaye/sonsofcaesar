@@ -98,3 +98,37 @@ class StaffOut(BaseModel):
 
 class ResendIn(BaseModel):
     email: EmailStr
+
+
+class CheckinIn(BaseModel):
+    event_slug: str
+    code: str = Field(max_length=200)
+
+
+class CheckinTicket(BaseModel):
+    code: str
+    holder_name: str
+    tier: str
+    status: str
+    checked_in_at: datetime | None
+    checked_in_by: str | None
+    buyer_email_hint: str
+
+
+class CheckinResult(BaseModel):
+    # ok = let them in; already = used before; void = refunded;
+    # wrong_event = ticket for another event; not_found = not one of ours
+    result: Literal['ok', 'already', 'void', 'wrong_event', 'not_found']
+    ticket: CheckinTicket | None = None
+    other_event: str | None = None
+
+
+class CheckinStats(BaseModel):
+    checked_in: int
+    total: int
+
+
+class StaffEventOut(BaseModel):
+    slug: str
+    name: str
+    starts_at: datetime

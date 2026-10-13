@@ -10,6 +10,7 @@ import TicketView from './pages/TicketView'
 import OrderView from './pages/OrderView'
 import Admin from './admin/Admin'
 import AdminHome from './admin/AdminHome'
+import Scanner from './admin/Scanner'
 import { EXTERNAL } from './NavButton'
 
 // Old /tickets links go straight to the ticketing site
@@ -35,6 +36,7 @@ export default function App() {
       {/* Staff area: its own layout, no public header/footer */}
       <Route path="/admin" element={<Admin />}>
         <Route index element={<AdminHome />} />
+        <Route path="scan" element={<Scanner />} />
       </Route>
       {/* Unknown addresses go back to the intro */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,18 +1,19 @@
+import { Link } from 'react-router'
 import { useStaff } from './Admin'
+import Scanner from './Scanner'
 
-// Landing page after login. Door staff get the scanner; admins get the dashboard.
-// (Both are placeholders until steps 10 and 11.)
+// Door staff go straight to the scanner. Admins get a home page (dashboard in step 11).
 export default function AdminHome() {
   const me = useStaff()
+  if (me.role === 'door') return <Scanner />
   return (
     <section className="admin-placeholder">
-      <p className="admin-kicker">{me.role === 'admin' ? 'dashboard' : 'door'}</p>
+      <p className="admin-kicker">dashboard</p>
       <h1>Hey {me.name.split(' ')[0]}.</h1>
-      <p>
-        {me.role === 'admin'
-          ? 'Sales dashboard and attendee list land here in step 11. The scanner arrives in step 10.'
-          : 'The scanner arrives here in step 10.'}
-      </p>
+      <p>Sales dashboard and attendee list land here in step 11.</p>
+      <Link to="/admin/scan" className="enter admin-scan-link">
+        open scanner
+      </Link>
     </section>
   )
 }

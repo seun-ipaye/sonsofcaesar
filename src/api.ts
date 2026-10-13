@@ -107,3 +107,24 @@ export function formatWhen(iso: string) {
 export const money = (cents: number) => `$${(cents / 100).toFixed(2)}`
 
 export type StaffMe = { name: string; email: string; role: 'admin' | 'door' }
+
+export type CheckinTicket = {
+  code: string
+  holder_name: string
+  tier: string
+  status: 'valid' | 'void'
+  checked_in_at: string | null
+  checked_in_by: string | null
+  buyer_email_hint: string
+}
+
+export type CheckinResult = {
+  result: 'ok' | 'already' | 'void' | 'wrong_event' | 'not_found'
+  ticket: CheckinTicket | null
+  other_event: string | null
+}
+
+export type StaffEvent = { slug: string; name: string; starts_at: string }
+
+export const timeOnly = (iso: string) =>
+  new Date(iso).toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Toronto' })

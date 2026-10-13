@@ -130,3 +130,11 @@
   color: #ff8a8a;
   font-size: 0.9rem;
 }
+
+.admin-scan-link {
+  display: inline-block;
+  width: auto !important;
+  margin-top: 1.5rem;
+  padding: 0.8rem 1.6rem;
+  text-decoration: none;
+}
