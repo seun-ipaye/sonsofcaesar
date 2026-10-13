@@ -284,6 +284,45 @@ def add_staff(
         typer.secho(f'Added {name} <{email}> as {role.value}', fg='green')
 
 
+@cli.command()
+def set_password(
+    email: str,
+    password: str = typer.Option(..., prompt=True, hide_input=True, confirmation_prompt=True),
+):
+    """Reset a staff password (logs them out everywhere)."""
+    from app.auth import end_all_sessions
+
+    if len(password) < 10:
+        typer.secho('Use at least 10 characters.', fg='red')
+        raise typer.Exit(1)
+    with SessionLocal() as db:
+        staff = db.scalar(select(Staff).where(Staff.email == email.strip().lower()))
+        if not staff:
+            typer.secho(f'No staff with email {email}', fg='red')
+            raise typer.Exit(1)
+        staff.password_hash = hash_password(password)
+        end_all_sessions(db, staff.id)
+        db.commit()
+        typer.secho(f'Password updated for {staff.name}; they\'ve been logged out everywhere.', fg='green')
+
+
+@cli.command()
+def disable_staff(email: str, enable: bool = typer.Option(False, '--enable', help='Re-enable instead')):
+    """Disable a staff login (instantly logs them out), or --enable it again."""
+    from app.auth import end_all_sessions
+
+    with SessionLocal() as db:
+        staff = db.scalar(select(Staff).where(Staff.email == email.strip().lower()))
+        if not staff:
+            typer.secho(f'No staff with email {email}', fg='red')
+            raise typer.Exit(1)
+        staff.active = enable
+        if not enable:
+            end_all_sessions(db, staff.id)
+        db.commit()
+        typer.secho(f'{staff.name} is now {"enabled" if enable else "disabled and logged out"}', fg='green')
+
+
 @cli.command('staff')
 def list_staff():
     """Show staff logins."""

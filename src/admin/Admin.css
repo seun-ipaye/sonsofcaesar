@@ -1,0 +1,132 @@
+.admin-shell {
+  min-height: 100%;
+  background: #000;
+  color: #fff;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #fff;
+  text-decoration: none;
+}
+
+.admin-brand img {
+  width: 32px;
+  height: 32px;
+}
+
+.admin-who {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  opacity: 0.8;
+}
+
+.admin-who button {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+}
+
+.admin-main {
+  padding: 1.5rem 1rem 3rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.admin-kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.admin-placeholder h1 {
+  font-weight: 400;
+  margin: 0.6rem 0 1rem;
+}
+
+.admin-placeholder p {
+  opacity: 0.75;
+  line-height: 1.7;
+}
+
+/* ---- login ---- */
+.admin-login {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.admin-login form {
+  width: min(340px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-login-logo {
+  width: 72px;
+  align-self: center;
+}
+
+.admin-login .admin-kicker {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.admin-login label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.admin-login input {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  letter-spacing: normal;
+  text-transform: none;
+  padding: 0.75rem;
+}
+
+.admin-login input:focus {
+  outline: none;
+  border-color: #fff;
+}
+
+.admin-login .enter {
+  margin-top: 0.5rem;
+  padding: 0.9rem;
+}
+
+.admin-error {
+  margin: 0;
+  color: #ff8a8a;
+  font-size: 0.9rem;
+}

@@ -71,6 +71,8 @@ export class ApiError extends Error {
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
+    // Send the staff login cookie (it only exists for logged-in staff)
+    credentials: 'include',
     headers: { 'content-type': 'application/json', ...init?.headers },
   })
   const body = await res.json().catch(() => null)
@@ -92,3 +94,5 @@ export function formatWhen(iso: string) {
 }
 
 export const money = (cents: number) => `$${(cents / 100).toFixed(2)}`
+
+export type StaffMe = { name: string; email: string; role: 'admin' | 'door' }

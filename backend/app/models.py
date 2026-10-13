@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    JSON,
     CheckConstraint,
     DateTime,
     Enum,
@@ -130,6 +131,8 @@ class OrderItem(Base):
     ticket_type_id: Mapped[int] = mapped_column(ForeignKey('ticket_types.id'), index=True)
     quantity: Mapped[int] = mapped_column(Integer)
     unit_price_cents: Mapped[int] = mapped_column(Integer)
+    # Name for each ticket in this line, in order (kept until payment creates the tickets)
+    holder_names: Mapped[list[str]] = mapped_column(JSON, default=list)
 
     order: Mapped[Order] = relationship(back_populates='items')
     ticket_type: Mapped[TicketType] = relationship()
@@ -167,3 +170,29 @@ class Staff(Base):
     role: Mapped[StaffRole] = mapped_column(_enum(StaffRole), default=StaffRole.door)
     active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class StaffSession(Base):
+    """A logged-in device. The browser holds a random token in a cookie; we store
+    only its hash, so a database leak can't be used to log in."""
+
+    __tablename__ = 'staff_sessions'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    staff_id: Mapped[int] = mapped_column(ForeignKey('staff.id', ondelete='CASCADE'), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    user_agent: Mapped[str | None] = mapped_column(String(300))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    staff: Mapped[Staff] = relationship()
+
+
+class LoginFailure(Base):
+    """Wrong-password attempts, for locking out password guessing."""
+
+    __tablename__ = 'login_failures'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), index=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)

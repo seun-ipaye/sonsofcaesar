@@ -38,7 +38,8 @@ def render_tickets_email(order: Order) -> tuple[str, str]:
         <tr><td style="padding:24px 0;border-top:1px solid #222;text-align:center">
           <img src="{settings.api_url}/tickets/{t.code}/qr.png" width="220" height="220" alt="QR code"
                style="display:block;margin:0 auto 14px;border:8px solid #fff;background:#fff">
-          <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#fff">{esc(t.ticket_type.name)}</div>
+          <div style="font-size:16px;color:#fff">{esc(t.holder_name)}</div>
+          <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#ccc;margin-top:6px">{esc(t.ticket_type.name)}</div>
           <div style="font-size:12px;color:#888;margin-top:4px">Ticket {i} of {len(order.tickets)} · ...{t.code[-4:]}</div>
         </td></tr>'''
         for i, t in enumerate(order.tickets, 1)
@@ -85,7 +86,10 @@ def send_tickets_email(db: Session, order_id, force: bool = False) -> bool:
 
     subject, body = render_tickets_email(order)
     attachments = [
-        {'filename': f'ticket-{i}-{t.ticket_type.name.lower().replace(" ", "-")}.png', 'content': list(qr_png(t.code))}
+        {
+            'filename': f'ticket-{i}-{t.holder_name.split()[0].lower() if t.holder_name.strip() else "guest"}.png',
+            'content': list(qr_png(t.code)),
+        }
         for i, t in enumerate(order.tickets, 1)
     ]
     resend.api_key = settings.resend_api_key

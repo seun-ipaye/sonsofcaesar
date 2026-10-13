@@ -113,3 +113,38 @@ def test_full_refund_voids_tickets_partial_does_not(db, order):
 
 def test_unknown_events_are_acknowledged():
     assert send('customer.created', {'id': 'cus_1'}).status_code == 200
+
+
+def test_each_ticket_gets_its_name(db):
+    from fastapi.testclient import TestClient as TC
+    from sqlalchemy import select
+
+    from app.routes import checkout as checkout_routes
+    from types import SimpleNamespace
+
+    e = Event(slug='n', name='N', starts_at=datetime.now(UTC) + timedelta(days=5), on_sale=True)
+    ga = TicketType(event=e, name='GA', price_cents=2000, quantity=10)
+    db.add_all([e, ga])
+    db.commit()
+
+    original = checkout_routes.create_stripe_session
+    checkout_routes.create_stripe_session = lambda *a: SimpleNamespace(id='cs_names', url='https://x')
+    try:
+        r = TC(app).post('/checkout', json={
+            'event_slug': 'n', 'name': 'Ada', 'email': 'ada@example.com',
+            'items': [{'tier_id': ga.id, 'quantity': 3, 'names': ['Ada', ' Grace Hopper ', '']}],
+        })
+    finally:
+        checkout_routes.create_stripe_session = original
+    order = db.get(Order, r.json()['order_id'])
+    send('checkout.session.completed', paid_session(order))
+    db.expire_all()
+    names = sorted(db.scalars(select(Ticket.holder_name)))
+    # Blank name falls back to the buyer
+    assert names == ['Ada', 'Ada', 'Grace Hopper']
+
+    too_many = TC(app).post('/checkout', json={
+        'event_slug': 'n', 'name': 'Ada', 'email': 'ada@example.com',
+        'items': [{'tier_id': ga.id, 'quantity': 1, 'names': ['A', 'B']}],
+    })
+    assert too_many.status_code == 400

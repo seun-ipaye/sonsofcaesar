@@ -8,6 +8,8 @@ import Gallery from './pages/Gallery'
 import Party from './pages/Party'
 import TicketView from './pages/TicketView'
 import OrderView from './pages/OrderView'
+import Admin from './admin/Admin'
+import AdminHome from './admin/AdminHome'
 import { EXTERNAL } from './NavButton'
 
 // Old /tickets links go straight to the ticketing site
@@ -29,6 +31,10 @@ export default function App() {
         <Route path="/t/:code" element={<TicketView />} />
         <Route path="/order/:orderId" element={<OrderView />} />
         {/* <Route path="/about" element={<About />} /> (hidden for now) */}
+      </Route>
+      {/* Staff area: its own layout, no public header/footer */}
+      <Route path="/admin" element={<Admin />}>
+        <Route index element={<AdminHome />} />
       </Route>
       {/* Unknown addresses go back to the intro */}
       <Route path="*" element={<Navigate to="/" replace />} />

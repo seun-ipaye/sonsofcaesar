@@ -46,13 +46,14 @@ def fulfill_order(db: Session, order_id: str, payment_intent_id: str | None, amo
     order.paid_at = datetime.now(UTC)
     order.stripe_payment_intent_id = payment_intent_id
     for item in order.items:
-        for _ in range(item.quantity):
+        names = item.holder_names or []
+        for i in range(item.quantity):
             db.add(
                 Ticket(
                     order=order,
                     event_id=order.event_id,
                     ticket_type_id=item.ticket_type_id,
-                    holder_name=order.buyer_name,
+                    holder_name=names[i] if i < len(names) and names[i] else order.buyer_name,
                 )
             )
     db.commit()

@@ -37,6 +37,8 @@ class EventOut(BaseModel):
 class CheckoutItem(BaseModel):
     tier_id: int
     quantity: int = Field(ge=1, le=20)
+    # One name per ticket; missing/blank ones fall back to the buyer's name
+    names: list[str] = Field(default_factory=list, max_length=20)
 
 
 class CheckoutIn(BaseModel):
@@ -77,3 +79,14 @@ class OrderPageOut(BaseModel):
     total_cents: int
     event: TicketEventOut
     tickets: list[TicketOut]
+
+
+class LoginIn(BaseModel):
+    email: str = Field(max_length=320)
+    password: str = Field(max_length=200)
+
+
+class StaffOut(BaseModel):
+    name: str
+    email: str
+    role: str

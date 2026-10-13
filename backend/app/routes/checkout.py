@@ -72,10 +72,16 @@ def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
         raise HTTPException(404, 'This event is not on sale')
 
     wanted: dict[int, int] = {}
+    names: dict[int, list[str]] = {}
+    buyer_name = body.name.strip()
     for item in body.items:
         if item.tier_id in wanted:
             raise HTTPException(400, 'Each ticket type should appear once')
+        if len(item.names) > item.quantity:
+            raise HTTPException(400, 'More names than tickets')
         wanted[item.tier_id] = item.quantity
+        given = [n.strip()[:200] for n in item.names]
+        names[item.tier_id] = [(given[i] if i < len(given) and given[i] else buyer_name) for i in range(item.quantity)]
 
     # Lock these tiers until we commit. A second buyer going for the same tiers
     # waits here, then sees this order's hold, so the last ticket can't sell twice.
@@ -115,14 +121,16 @@ def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
 
     order = Order(
         event_id=event.id,
-        buyer_name=body.name.strip(),
+        buyer_name=buyer_name,
         buyer_email=body.email.lower(),
         subtotal_cents=subtotal,
         fee_cents=fee,
         total_cents=subtotal + fee,
         expires_at=now + timedelta(minutes=HOLD_MINUTES),
         items=[
-            OrderItem(ticket_type_id=tid, quantity=qty, unit_price_cents=tiers[tid].price_cents)
+            OrderItem(
+                ticket_type_id=tid, quantity=qty, unit_price_cents=tiers[tid].price_cents, holder_names=names[tid]
+            )
             for tid, qty in wanted.items()
         ],
     )

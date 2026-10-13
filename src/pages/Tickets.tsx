@@ -32,6 +32,8 @@ export default function Tickets() {
   const [loadError, setLoadError] = useState('')
   const [qty, setQty] = useState<Record<number, number>>({})
   const [name, setName] = useState('')
+  // Names on tickets, per tier: holderNames[tierId][i]. Ticket 1 overall defaults to the buyer.
+  const [holderNames, setHolderNames] = useState<Record<number, string[]>>({})
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -67,6 +69,20 @@ export default function Tickets() {
   const fee = serviceFeeCents(subtotal)
   const count = Object.values(qty).reduce((a, b) => a + b, 0)
 
+  // One slot per ticket being bought, in tier order. The very first one may be
+  // left blank: it's the buyer's own ticket.
+  const ticketSlots = (event?.tiers ?? []).flatMap((tier) =>
+    Array.from({ length: qty[tier.id] ?? 0 }, (_, index) => ({ tier, index, first: false })),
+  )
+  if (ticketSlots.length) ticketSlots[0].first = true
+
+  const setHolder = (tierId: number, index: number, value: string) =>
+    setHolderNames((h) => {
+      const list = [...(h[tierId] ?? [])]
+      list[index] = value
+      return { ...h, [tierId]: list }
+    })
+
   const change = (t: Tier, delta: number) => {
     setError('')
     setQty((q) => {
@@ -87,7 +103,11 @@ export default function Tickets() {
           event_slug: event.slug,
           items: Object.entries(qty)
             .filter(([, n]) => n > 0)
-            .map(([tier_id, quantity]) => ({ tier_id: Number(tier_id), quantity })),
+            .map(([tier_id, quantity]) => ({
+              tier_id: Number(tier_id),
+              quantity,
+              names: (holderNames[Number(tier_id)] ?? []).slice(0, quantity),
+            })),
           name: name.trim(),
           email: email.trim(),
         }),
@@ -193,6 +213,25 @@ export default function Tickets() {
               />
             </label>
             <p className="checkout-hint">Your tickets are emailed here.</p>
+
+            <fieldset className="holders">
+              <legend>Names on tickets</legend>
+              {ticketSlots.map(({ tier, index, first }) => (
+                <label key={`${tier.id}-${index}`}>
+                  <span>
+                    {tier.name} · ticket {index + 1}
+                  </span>
+                  <input
+                    value={holderNames[tier.id]?.[index] ?? ''}
+                    onChange={(e) => setHolder(tier.id, index, e.target.value)}
+                    placeholder={first ? name || 'Your name' : 'Full name'}
+                    required={!first}
+                    maxLength={200}
+                  />
+                </label>
+              ))}
+              <p className="checkout-hint">Each ticket is checked in under its name.</p>
+            </fieldset>
 
             {error && <p className="checkout-error">{error}</p>}
 
