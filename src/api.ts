@@ -128,3 +128,64 @@ export type StaffEvent = { slug: string; name: string; starts_at: string }
 
 export const timeOnly = (iso: string) =>
   new Date(iso).toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Toronto' })
+
+// ---------- admin ----------
+
+export type AdminTier = {
+  id: number
+  name: string
+  description: string | null
+  price_cents: number
+  quantity: number
+  max_per_order: number
+  sales_start: string | null
+  sales_end: string | null
+  active: boolean
+  sold: number
+  held: number
+  checked_in: number
+  revenue_cents: number
+}
+
+export type AdminEvent = {
+  slug: string
+  name: string
+  description: string | null
+  venue: string | null
+  poster_url: string | null
+  starts_at: string
+  ends_at: string | null
+  on_sale: boolean
+  tickets_sold: number
+  capacity: number
+  checked_in: number
+  orders: number
+  revenue_cents: number
+  fees_cents: number
+  refunded_orders: number
+  tiers: AdminTier[]
+  sales_by_day: { day: string; tickets: number; revenue_cents: number }[]
+}
+
+export type AdminEventListItem = {
+  slug: string
+  name: string
+  starts_at: string
+  on_sale: boolean
+  tickets_sold: number
+  capacity: number
+}
+
+export type Attendee = {
+  code: string
+  holder_name: string
+  holder_email: string | null
+  tier: string
+  status: 'valid' | 'void'
+  checked_in_at: string | null
+  checked_in_by: string | null
+  order_id: string
+  buyer_name: string
+  buyer_email: string
+  paid_at: string | null
+}

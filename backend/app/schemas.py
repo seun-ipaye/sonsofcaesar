@@ -132,3 +132,112 @@ class StaffEventOut(BaseModel):
     slug: str
     name: str
     starts_at: datetime
+
+
+# ---------- admin ----------
+
+
+class AdminTierOut(BaseModel):
+    id: int
+    name: str
+    description: str | None
+    price_cents: int
+    quantity: int
+    max_per_order: int
+    sales_start: datetime | None
+    sales_end: datetime | None
+    active: bool
+    sold: int  # valid tickets issued
+    held: int  # in checkouts happening right now
+    checked_in: int
+    revenue_cents: int  # ticket price x sold (what you keep)
+
+
+class SalesDay(BaseModel):
+    day: str  # YYYY-MM-DD, Toronto time
+    tickets: int
+    revenue_cents: int
+
+
+class AdminEventOut(BaseModel):
+    slug: str
+    name: str
+    description: str | None
+    venue: str | None
+    poster_url: str | None
+    starts_at: datetime
+    ends_at: datetime | None
+    on_sale: bool
+    tickets_sold: int
+    capacity: int
+    checked_in: int
+    orders: int
+    revenue_cents: int  # ticket sales you keep
+    fees_cents: int  # service fees collected (cover Stripe)
+    refunded_orders: int
+    tiers: list[AdminTierOut]
+    sales_by_day: list[SalesDay]
+
+
+class AdminEventListItem(BaseModel):
+    slug: str
+    name: str
+    starts_at: datetime
+    on_sale: bool
+    tickets_sold: int
+    capacity: int
+
+
+class AttendeeOut(BaseModel):
+    code: str
+    holder_name: str
+    holder_email: str | None
+    tier: str
+    status: str
+    checked_in_at: datetime | None
+    checked_in_by: str | None
+    order_id: str
+    buyer_name: str
+    buyer_email: str
+    paid_at: datetime | None
+
+
+class EventIn(BaseModel):
+    slug: str = Field(pattern=r'^[a-z0-9]+(-[a-z0-9]+)*$', max_length=80)
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = None
+    venue: str | None = None
+    poster_url: str | None = None
+    starts_at: datetime
+    ends_at: datetime | None = None
+
+
+class EventPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+    venue: str | None = None
+    poster_url: str | None = None
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    on_sale: bool | None = None
+
+
+class TierIn(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    description: str | None = None
+    price_cents: int = Field(ge=0)
+    quantity: int = Field(ge=0)
+    max_per_order: int = Field(default=4, ge=1, le=20)
+    sales_start: datetime | None = None
+    sales_end: datetime | None = None
+
+
+class TierPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    description: str | None = None
+    price_cents: int | None = Field(default=None, ge=0)
+    quantity: int | None = Field(default=None, ge=0)
+    max_per_order: int | None = Field(default=None, ge=1, le=20)
+    sales_start: datetime | None = None
+    sales_end: datetime | None = None
+    active: bool | None = None
