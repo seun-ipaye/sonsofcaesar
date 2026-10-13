@@ -55,6 +55,8 @@ export type OrderPage = {
   id: string
   status: 'pending' | 'paid' | 'expired' | 'refunded'
   buyer_name: string
+  email_hint: string
+  resends_left: number
   total_cents: number
   event: TicketEvent
   tickets: Ticket[]
@@ -62,9 +64,12 @@ export type OrderPage = {
 
 export class ApiError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  // For 422s: which fields the server rejected, e.g. ["body","items",0,"emails",1]
+  fields: (string | number)[][]
+  constructor(status: number, message: string, fields: (string | number)[][] = []) {
     super(message)
     this.status = status
+    this.fields = fields
   }
 }
 
@@ -76,7 +81,13 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { 'content-type': 'application/json', ...init?.headers },
   })
   const body = await res.json().catch(() => null)
-  if (!res.ok) throw new ApiError(res.status, body?.detail ?? 'Something went wrong')
+  if (!res.ok) {
+    const detail = body?.detail
+    if (Array.isArray(detail)) {
+      throw new ApiError(res.status, 'Check the form', detail.map((d: { loc: (string | number)[] }) => d.loc))
+    }
+    throw new ApiError(res.status, detail ?? 'Something went wrong')
+  }
   return body as T
 }
 

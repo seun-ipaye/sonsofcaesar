@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { api, ApiError, formatWhen, money, serviceFeeCents, type SaleEvent, type Tier } from '../api'
+import Chevron from '../Chevron'
 import './Tickets.css'
 
 // Show "X left" only when it's getting scarce
@@ -34,6 +35,9 @@ export default function Tickets() {
   const [name, setName] = useState('')
   // Names on tickets, per tier: holderNames[tierId][i]. Ticket 1 overall defaults to the buyer.
   const [holderNames, setHolderNames] = useState<Record<number, string[]>>({})
+  // Optional "send it to them too" email per ticket, same shape as holderNames
+  const [holderEmails, setHolderEmails] = useState<Record<number, string[]>>({})
+  const [openSends, setOpenSends] = useState<Set<string>>(new Set())
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -76,11 +80,22 @@ export default function Tickets() {
   )
   if (ticketSlots.length) ticketSlots[0].first = true
 
-  const setHolder = (tierId: number, index: number, value: string) =>
-    setHolderNames((h) => {
-      const list = [...(h[tierId] ?? [])]
-      list[index] = value
-      return { ...h, [tierId]: list }
+  const setIn =
+    (setter: typeof setHolderNames) => (tierId: number, index: number, value: string) =>
+      setter((h) => {
+        const list = [...(h[tierId] ?? [])]
+        list[index] = value
+        return { ...h, [tierId]: list }
+      })
+  const setHolder = setIn(setHolderNames)
+  const setHolderEmail = setIn(setHolderEmails)
+
+  const toggleSend = (key: string) =>
+    setOpenSends((open) => {
+      const next = new Set(open)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
     })
 
   const change = (t: Tier, delta: number) => {
@@ -106,7 +121,13 @@ export default function Tickets() {
             .map(([tier_id, quantity]) => ({
               tier_id: Number(tier_id),
               quantity,
-              names: (holderNames[Number(tier_id)] ?? []).slice(0, quantity),
+              // Blank (never typed) names are sent as "", which means "use the buyer's name"
+              names: Array.from({ length: quantity }, (_, i) => holderNames[Number(tier_id)]?.[i] ?? ''),
+              // Only send emails the buyer actually opened the field for and filled in
+              emails: Array.from({ length: quantity }, (_, i) => {
+                const value = holderEmails[Number(tier_id)]?.[i]?.trim()
+                return openSends.has(`${tier_id}-${i}`) && value ? value : null
+              }),
             })),
           name: name.trim(),
           email: email.trim(),
@@ -116,7 +137,12 @@ export default function Tickets() {
     } catch (err) {
       setSubmitting(false)
       if (err instanceof ApiError && err.status === 422) {
-        setError('Check your name and email.')
+        // Say which field the server didn't like
+        const flat = err.fields.map((loc) => loc.join('.'))
+        if (flat.some((f) => f.includes('.emails.'))) setError("One of your friends' emails doesn't look right.")
+        else if (flat.some((f) => f === 'body.email')) setError("Your email doesn't look right.")
+        else if (flat.some((f) => f === 'body.name')) setError('Add your name.')
+        else setError('Something in the form needs fixing.')
       } else {
         setError((err as Error).message)
         load() // stock may have changed (e.g. "Only 2 left")
@@ -216,20 +242,51 @@ export default function Tickets() {
 
             <fieldset className="holders">
               <legend>Names on tickets</legend>
-              {ticketSlots.map(({ tier, index, first }) => (
-                <label key={`${tier.id}-${index}`}>
-                  <span>
-                    {tier.name} · ticket {index + 1}
-                  </span>
-                  <input
-                    value={holderNames[tier.id]?.[index] ?? ''}
-                    onChange={(e) => setHolder(tier.id, index, e.target.value)}
-                    placeholder={first ? name || 'Your name' : 'Full name'}
-                    required={!first}
-                    maxLength={200}
-                  />
-                </label>
-              ))}
+              {ticketSlots.map(({ tier, index, first }) => {
+                const key = `${tier.id}-${index}`
+                const sending = openSends.has(key)
+                return (
+                  <div className="holder" key={key}>
+                    <label>
+                      <span>
+                        {tier.name} · ticket {index + 1}
+                      </span>
+                      <input
+                        value={holderNames[tier.id]?.[index] ?? ''}
+                        onChange={(e) => setHolder(tier.id, index, e.target.value)}
+                        placeholder={first ? name || 'Your name' : 'Full name'}
+                        required={!first}
+                        maxLength={200}
+                      />
+                    </label>
+                    {!first && (
+                      <>
+                        <button
+                          type="button"
+                          className={`send-toggle ${sending ? 'open' : ''}`}
+                          onClick={() => toggleSend(key)}
+                          aria-expanded={sending}
+                        >
+                          <Chevron />
+                          send it to them too
+                        </button>
+                        {sending && (
+                          <input
+                            type="email"
+                            className="send-email"
+                            value={holderEmails[tier.id]?.[index] ?? ''}
+                            onChange={(e) => setHolderEmail(tier.id, index, e.target.value)}
+                            placeholder="Their email"
+                            aria-label={`Email for ${tier.name} ticket ${index + 1}`}
+                            autoComplete="off"
+                            required
+                          />
+                        )}
+                      </>
+                    )}
+                  </div>
+                )
+              })}
               <p className="checkout-hint">Each ticket is checked in under its name.</p>
             </fieldset>
 

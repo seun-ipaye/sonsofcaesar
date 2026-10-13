@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import SessionLocal, get_db
-from app.emails import send_tickets_email
+from app.emails import send_friend_emails, send_tickets_email
 from app.fulfillment import expire_order, fulfill_order, refund_order
 
 router = APIRouter(prefix='/webhooks', tags=['webhooks'])
@@ -27,6 +27,12 @@ def email_tickets(order_id: str) -> None:
             send_tickets_email(db, order_id)
     except Exception:
         log.exception('Could not email tickets for order %s', order_id)
+    # Separately, so a problem with one never stops the other
+    try:
+        with SessionLocal() as db:
+            send_friend_emails(db, order_id)
+    except Exception:
+        log.exception('Could not email friends\' tickets for order %s', order_id)
 
 
 @router.post('/stripe')

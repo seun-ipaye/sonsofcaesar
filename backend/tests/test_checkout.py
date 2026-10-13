@@ -152,3 +152,15 @@ def test_cancel_does_nothing_if_stripe_refuses(db, event, monkeypatch):
     assert TestClient(app).post(f'/checkout/{order_id}/cancel').json() == {'released': False}
     db.expire_all()
     assert db.get(Order, order_id).status == OrderStatus.pending
+
+
+def test_blank_or_missing_names_use_buyer_name(db, event):
+    # The website may send null or "" for an untouched name field; both mean "the buyer"
+    ga = tier_id(db, 'GA')
+    r = TestClient(app).post('/checkout', json={
+        'event_slug': 'vol-iii', 'name': 'Ada', 'email': 'ada@example.com',
+        'items': [{'tier_id': ga, 'quantity': 3, 'names': [None, '', 'Grace'], 'emails': [None, None, 'g@example.com']}],
+    })
+    assert r.status_code == 200, r.text
+    order = db.get(Order, r.json()['order_id'])
+    assert order.items[0].holder_names == ['Ada', 'Ada', 'Grace']

@@ -38,7 +38,9 @@ class CheckoutItem(BaseModel):
     tier_id: int
     quantity: int = Field(ge=1, le=20)
     # One name per ticket; missing/blank ones fall back to the buyer's name
-    names: list[str] = Field(default_factory=list, max_length=20)
+    names: list[str | None] = Field(default_factory=list, max_length=20)
+    # Optional per ticket: also email that ticket to this address (null = don't)
+    emails: list[EmailStr | None] = Field(default_factory=list, max_length=20)
 
 
 class CheckoutIn(BaseModel):
@@ -76,6 +78,8 @@ class OrderPageOut(BaseModel):
     id: str
     status: str  # pending / paid / expired / refunded
     buyer_name: str
+    email_hint: str  # masked, e.g. se•••@gmail.com
+    resends_left: int
     total_cents: int
     event: TicketEventOut
     tickets: list[TicketOut]
@@ -90,3 +94,7 @@ class StaffOut(BaseModel):
     name: str
     email: str
     role: str
+
+
+class ResendIn(BaseModel):
+    email: EmailStr

@@ -73,15 +73,19 @@ def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
 
     wanted: dict[int, int] = {}
     names: dict[int, list[str]] = {}
+    emails: dict[int, list[str | None]] = {}
     buyer_name = body.name.strip()
     for item in body.items:
         if item.tier_id in wanted:
             raise HTTPException(400, 'Each ticket type should appear once')
-        if len(item.names) > item.quantity:
+        if len(item.names) > item.quantity or len(item.emails) > item.quantity:
             raise HTTPException(400, 'More names than tickets')
         wanted[item.tier_id] = item.quantity
-        given = [n.strip()[:200] for n in item.names]
+        given = [(n or '').strip()[:200] for n in item.names]
         names[item.tier_id] = [(given[i] if i < len(given) and given[i] else buyer_name) for i in range(item.quantity)]
+        emails[item.tier_id] = [
+            (item.emails[i].lower() if i < len(item.emails) and item.emails[i] else None) for i in range(item.quantity)
+        ]
 
     # Lock these tiers until we commit. A second buyer going for the same tiers
     # waits here, then sees this order's hold, so the last ticket can't sell twice.
@@ -129,7 +133,9 @@ def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
         expires_at=now + timedelta(minutes=HOLD_MINUTES),
         items=[
             OrderItem(
-                ticket_type_id=tid, quantity=qty, unit_price_cents=tiers[tid].price_cents, holder_names=names[tid]
+                ticket_type_id=tid, quantity=qty, unit_price_cents=tiers[tid].price_cents,
+                holder_names=names[tid],
+                holder_emails=emails[tid],
             )
             for tid, qty in wanted.items()
         ],

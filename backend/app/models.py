@@ -113,6 +113,9 @@ class Order(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # end of the stock hold
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # tickets email sent
+    # "Didn't get your tickets?" resends, limited to stop the form being used for spam
+    resend_count: Mapped[int] = mapped_column(Integer, default=0, server_default='0')
+    last_resent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     event: Mapped[Event] = relationship()
@@ -133,6 +136,8 @@ class OrderItem(Base):
     unit_price_cents: Mapped[int] = mapped_column(Integer)
     # Name for each ticket in this line, in order (kept until payment creates the tickets)
     holder_names: Mapped[list[str]] = mapped_column(JSON, default=list)
+    # Optional email per ticket ("send it to them too"), same order; None = don't send
+    holder_emails: Mapped[list[str | None]] = mapped_column(JSON, default=list, server_default='[]')
 
     order: Mapped[Order] = relationship(back_populates='items')
     ticket_type: Mapped[TicketType] = relationship()
@@ -149,6 +154,9 @@ class Ticket(Base):
     event_id: Mapped[int] = mapped_column(ForeignKey('events.id'), index=True)
     ticket_type_id: Mapped[int] = mapped_column(ForeignKey('ticket_types.id'), index=True)
     holder_name: Mapped[str] = mapped_column(String(200))
+    # Set when the buyer sent this ticket to a friend; they get their own email
+    holder_email: Mapped[str | None] = mapped_column(String(320))
+    emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # friend's email sent
     status: Mapped[TicketStatus] = mapped_column(_enum(TicketStatus), default=TicketStatus.valid)
     checked_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     checked_in_by_id: Mapped[int | None] = mapped_column(ForeignKey('staff.id'))

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router'
 import { api, ApiError, formatWhen, money, type OrderPage } from '../api'
 import { TicketCard } from './TicketView'
+import Chevron from '../Chevron'
 import './TicketView.css'
 import './OrderView.css'
 
@@ -75,6 +76,70 @@ export default function OrderView() {
           </a>
         ))}
       </div>
+
+      {order.status === 'paid' && <ResendTickets order={order} />}
     </section>
+  )
+}
+
+// "Didn't get your tickets?": fix the email address and send the same tickets again
+function ResendTickets({ order }: { order: OrderPage }) {
+  const [open, setOpen] = useState(false)
+  const [email, setEmail] = useState('')
+  const [hint, setHint] = useState(order.email_hint)
+  const [left, setLeft] = useState(order.resends_left)
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setStatus(null)
+    try {
+      const r = await api<{ sent_to: string; resends_left: number }>(`/orders/${order.id}/resend`, {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      setHint(r.sent_to)
+      setLeft(r.resends_left)
+      setStatus({ ok: true, text: `Sent to ${r.sent_to}. Check your spam folder too.` })
+    } catch (err) {
+      setStatus({
+        ok: false,
+        text: err instanceof ApiError && err.status === 422 ? 'That email doesn\'t look right.' : (err as Error).message,
+      })
+    }
+    setBusy(false)
+  }
+
+  return (
+    <div className="resend">
+      <button type="button" className={`resend-toggle ${open ? 'open' : ''}`} onClick={() => setOpen(!open)}>
+        <Chevron />
+        didn't get your tickets?
+      </button>
+      {open && (
+        <form onSubmit={submit} className="resend-form">
+          <p>
+            We sent them to <strong>{hint}</strong>. Typo? Enter the right email and we'll send the same tickets
+            again.
+          </p>
+          <div className="resend-row">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Your email"
+              required
+              autoComplete="email"
+            />
+            <button className="enter" disabled={busy || left === 0}>
+              {busy ? 'Sending…' : 'Send'}
+            </button>
+          </div>
+          {status && <p className={status.ok ? 'resend-ok' : 'resend-error'}>{status.text}</p>}
+        </form>
+      )}
+    </div>
   )
 }

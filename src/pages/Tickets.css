@@ -184,6 +184,48 @@
   gap: 0.9rem;
 }
 
+.holder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.send-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0.1rem 0;
+  color: #fff;
+  opacity: 0.45;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.send-toggle:hover,
+.send-toggle.open {
+  opacity: 0.8;
+}
+
+.send-toggle .chevron {
+  display: inline-block;
+  transition: transform 0.2s;
+}
+
+.send-toggle.open .chevron {
+  transform: rotate(180deg);
+}
+
+.checkout input.send-email {
+  font-size: 0.9rem;
+  padding: 0.6rem 0.75rem;
+  animation: site-fade-in 0.25s ease;
+}
+
 .holders legend {
   padding: 0;
   margin-bottom: 0.9rem;

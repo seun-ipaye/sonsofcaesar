@@ -41,3 +41,84 @@
   color: inherit;
   text-decoration: none;
 }
+
+.resend {
+  margin-top: 3rem;
+  width: min(420px, 100%);
+}
+
+.resend-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  color: #fff;
+  opacity: 0.5;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.resend-toggle:hover,
+.resend-toggle.open {
+  opacity: 0.85;
+}
+
+.resend-toggle .chevron {
+  display: inline-block;
+  transition: transform 0.2s;
+}
+
+.resend-toggle.open .chevron {
+  transform: rotate(180deg);
+}
+
+.resend-form {
+  margin-top: 1rem;
+  text-align: left;
+  animation: site-fade-in 0.25s ease;
+}
+
+.resend-form p {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  opacity: 0.8;
+  margin: 0 0 0.8rem;
+}
+
+.resend-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.resend-row input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font: inherit;
+  padding: 0.6rem 0.75rem;
+}
+
+.resend-row input:focus {
+  outline: none;
+  border-color: #fff;
+}
+
+.resend-row .enter {
+  /* the shared button style is full-width; here it sits beside the input */
+  width: auto;
+  flex: none;
+  padding: 0.6rem 1.2rem;
+}
+
+.resend-ok {
+  color: #9be59b;
+}
+
+.resend-error {
+  color: #ff8a8a;
+}
