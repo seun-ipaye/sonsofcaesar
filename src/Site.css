@@ -88,13 +88,13 @@
   opacity: 0.7;
 }
 
-.footer a {
+.footer > a {
   color: #fff;
   display: flex;
   transition: opacity 0.2s;
 }
 
-.footer a:hover {
+.footer > a:hover {
   opacity: 0.6;
 }
 
@@ -185,6 +185,11 @@
   .footer {
     padding: 1.5rem 1rem;
   }
+}
+
+.footer span {
+  /* keep "© 2026 Sons of Caesar · privacy" on one line */
+  white-space: nowrap;
 }
 
 .footer span a {

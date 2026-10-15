@@ -295,6 +295,58 @@ def resend_email(order_id: str):
             raise typer.Exit(1)
 
 
+# ---------- backups ----------
+
+
+@cli.command()
+def backup(out: str = typer.Option(None, help='Save to this file instead of the backup bucket')):
+    """Back up the whole database (to the private R2 bucket, or --out a file)."""
+    from app import backup as b
+
+    data, manifest = b.dump()
+    rows = sum(manifest['tables'].values())
+    if out:
+        with open(out, 'wb') as f:
+            f.write(data)
+        typer.secho(f'Saved {out} ({len(data) // 1024 + 1} KB, {rows} rows)', fg='green')
+        return
+    key = b.upload(data, manifest)
+    removed = b.prune()
+    typer.secho(f'Backed up to {key} ({len(data) // 1024 + 1} KB, {rows} rows); removed {removed} old', fg='green')
+
+
+@cli.command()
+def list_backups():
+    """Show backups in the bucket, newest first."""
+    from app import backup as b
+
+    for o in b.list_backups():
+        typer.echo(f"  {o['key']:<32} {o['size'] // 1024 + 1:>6} KB")
+
+
+@cli.command()
+def restore_backup(
+    into: str = typer.Option(..., help='URL of a NEW, EMPTY database to restore into'),
+    key: str = typer.Option(None, help='Backup in the bucket, e.g. db/2026-10-15T0900Z.zip (default: newest)'),
+    file: str = typer.Option(None, help='Or a local backup file'),
+):
+    """Restore a backup into an empty database. Never touches the live one."""
+    from app import backup as b
+
+    if file:
+        with open(file, 'rb') as f:
+            data = f.read()
+    else:
+        key = key or b.list_backups()[0]['key']
+        data = b.download(key)
+    manifest = b.restore(data, into)
+    typer.secho(
+        f"Restored backup from {manifest['created_at']} ({sum(manifest['tables'].values())} rows). "
+        'Point DATABASE_URL at that database to use it.',
+        fg='green',
+    )
+
+
 # ---------- staff ----------
 
 

@@ -26,7 +26,9 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # Use the same database as the app (backend/.env locally, Railway variables in production)
-config.set_main_option('sqlalchemy.url', settings.sqlalchemy_url.replace('%', '%%'))
+config.set_main_option(
+    'sqlalchemy.url', config.attributes.get('database_url', settings.sqlalchemy_url).replace('%', '%%')
+)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

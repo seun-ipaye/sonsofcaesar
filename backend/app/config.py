@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     site_url: str = 'http://localhost:5173'
     # Where this API is reachable (used for QR image links in emails)
     api_url: str = 'http://localhost:8000'
+    # Private R2 bucket for database backups (NOT the public gallery bucket)
+    backup_r2_account_id: str = ''
+    backup_r2_access_key_id: str = ''
+    backup_r2_secret_access_key: str = ''
+    backup_r2_bucket: str = 'sonsofcaesar-backups'
     # Websites allowed to call the API from the browser, comma-separated
     cors_origins: str = 'http://localhost:5173'
 
