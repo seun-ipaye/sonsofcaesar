@@ -74,4 +74,14 @@ def health():
             )
     except Exception as e:
         db['error'] = type(e).__name__
-    return {'status': 'ok', 'db': db}
+    # Configuration check without revealing any secret: just what's set, and the Stripe mode
+    key = settings.stripe_secret_key
+    config = {
+        'stripe': 'live' if settings.stripe_is_live else ('test' if key.startswith(('sk_test_', 'rk_test_')) else 'missing'),
+        'stripe_webhook_secret': settings.stripe_webhook_secret.startswith('whsec_'),
+        'email': settings.resend_api_key.startswith('re_'),
+        'site_url': settings.site_url,
+        'api_url': settings.api_url,
+        'test_payments_allowed': settings.test_payments_allowed,
+    }
+    return {'status': 'ok', 'db': db, 'config': config}

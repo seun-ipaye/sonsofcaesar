@@ -8,25 +8,15 @@ import Gallery from './pages/Gallery'
 import Party from './pages/Party'
 import TicketView from './pages/TicketView'
 import OrderView from './pages/OrderView'
+import Privacy from './pages/Privacy'
 import Admin from './admin/Admin'
 import AdminHome from './admin/AdminHome'
 import Scanner from './admin/Scanner'
 import { EXTERNAL } from './NavButton'
 
-// Old /tickets links go straight to the ticketing site
-// While tickets live on Bloom, /tickets redirects there, except for testers:
-// /tickets?preview shows our own page (remembered for this browser tab, so the
-// return trip from Stripe keeps working).
+// While tickets live on another site (EXTERNAL in NavButton), /tickets redirects there
 function TicketsRoute() {
-  const params = new URLSearchParams(window.location.search)
-  let preview = params.has('preview')
-  try {
-    if (preview) sessionStorage.setItem('soc-tickets-preview', '1')
-    preview ||= sessionStorage.getItem('soc-tickets-preview') === '1'
-  } catch {
-    /* storage blocked: the ?preview link still works on its own */
-  }
-  if (EXTERNAL.tickets && !preview) return <ExternalRedirect to={EXTERNAL.tickets} />
+  if (EXTERNAL.tickets) return <ExternalRedirect to={EXTERNAL.tickets} />
   return <Tickets />
 }
 
@@ -47,6 +37,7 @@ export default function App() {
         <Route path="/gallery/:party" element={<Party />} />
         <Route path="/t/:code" element={<TicketView />} />
         <Route path="/order/:orderId" element={<OrderView />} />
+        <Route path="/privacy" element={<Privacy />} />
         {/* <Route path="/about" element={<About />} /> (hidden for now) */}
       </Route>
       {/* Staff area: its own layout, no public header/footer */}

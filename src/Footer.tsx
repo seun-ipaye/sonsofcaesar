@@ -3,7 +3,9 @@ const INSTAGRAM = 'https://instagram.com/socfrvr'
 export default function Footer() {
   return (
     <footer className="footer">
-      <span>© {new Date().getFullYear()} Sons of Caesar</span>
+      <span>
+        © {new Date().getFullYear()} Sons of Caesar · <a href="/privacy">privacy</a>
+      </span>
       <a href={INSTAGRAM} target="_blank" rel="noreferrer" aria-label="Instagram @socfrvr">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8">
           <rect x="3" y="3" width="18" height="18" rx="5" />

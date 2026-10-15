@@ -295,7 +295,10 @@ export default function Tickets() {
             <button className="enter checkout-btn" disabled={submitting}>
               {submitting ? 'One sec…' : `Checkout · ${money(subtotal + fee)}`}
             </button>
-            <p className="checkout-hint">Secure payment by Stripe.</p>
+            <p className="checkout-hint">
+              Secure payment by Stripe. All sales are final; if the event is cancelled you'll get a full refund. We
+              only use your details to send your tickets (<a href="/privacy">privacy</a>).
+            </p>
           </div>
         )}
       </form>

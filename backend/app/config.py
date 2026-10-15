@@ -20,6 +20,16 @@ class Settings(BaseSettings):
     cors_origins: str = 'http://localhost:5173'
 
     @property
+    def test_payments_allowed(self) -> bool:
+        # Sandbox (fake-money) payments only on a developer's machine. On the real
+        # site they'd create real, scannable tickets for free, so they're refused.
+        return 'localhost' in self.site_url or '127.0.0.1' in self.site_url
+
+    @property
+    def stripe_is_live(self) -> bool:
+        return self.stripe_secret_key.startswith(('sk_live_', 'rk_live_'))
+
+    @property
     def sqlalchemy_url(self) -> str:
         # Railway gives "postgresql://..."; SQLAlchemy needs to be told to use psycopg 3
         url = self.database_url

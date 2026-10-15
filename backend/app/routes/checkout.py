@@ -67,6 +67,9 @@ def create_stripe_session(order: Order, event: Event, tiers: dict[int, TicketTyp
 def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
     now = datetime.now(UTC)
 
+    if not settings.stripe_is_live and not settings.test_payments_allowed:
+        raise HTTPException(503, 'Ticket sales open soon.')
+
     event = db.scalars(upcoming_on_sale(db).where(Event.slug == body.event_slug)).first()
     if not event:
         raise HTTPException(404, 'This event is not on sale')

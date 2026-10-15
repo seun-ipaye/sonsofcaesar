@@ -164,3 +164,18 @@ def test_blank_or_missing_names_use_buyer_name(db, event):
     assert r.status_code == 200, r.text
     order = db.get(Order, r.json()['order_id'])
     assert order.items[0].holder_names == ['Ada', 'Ada', 'Grace']
+
+
+def test_test_mode_payments_refused_on_the_real_site(db, event, monkeypatch):
+    from app.config import settings
+
+    ga = tier_id(db, 'GA')
+    monkeypatch.setattr(settings, 'site_url', 'https://www.sonsofcaesar.xyz')
+    monkeypatch.setattr(settings, 'stripe_secret_key', 'sk_test_123')
+    r = buy([{'tier_id': ga, 'quantity': 1}])
+    assert r.status_code == 503 and r.json()['detail'] == 'Ticket sales open soon.'
+    assert db.query(Order).count() == 0
+
+    # With live keys the real site sells normally
+    monkeypatch.setattr(settings, 'stripe_secret_key', 'sk_live_123')
+    assert buy([{'tier_id': ga, 'quantity': 1}]).status_code == 200

@@ -186,3 +186,27 @@
     padding: 1.5rem 1rem;
   }
 }
+
+.footer span a {
+  color: inherit;
+}
+
+.privacy {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-bottom: 3rem;
+  line-height: 1.8;
+}
+
+.privacy h1 {
+  font-weight: 400;
+  letter-spacing: 0.12em;
+}
+
+.privacy p {
+  opacity: 0.85;
+}
+
+.privacy a {
+  color: #fff;
+}

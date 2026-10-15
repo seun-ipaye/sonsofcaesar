@@ -248,6 +248,41 @@ def sync_order(order_id: str):
 
 
 @cli.command()
+def wipe_test_orders(yes: bool = typer.Option(False, '--yes', help='Skip the confirmation (for scripts/tests)')):
+    """Delete every TEST order and ticket (sandbox purchases), keeping events,
+    tiers and staff. Refuses if any order was paid through live Stripe."""
+    from sqlalchemy import delete, func
+
+    from app.models import Order, Ticket
+
+    with SessionLocal() as db:
+        live = db.scalar(select(func.count()).where(Order.stripe_session_id.like('cs_live_%')))
+        if live:
+            typer.secho(
+                f'Refusing: {live} order(s) went through LIVE Stripe. Real sales are never wiped.', fg='red'
+            )
+            raise typer.Exit(1)
+
+        orders = db.scalar(select(func.count()).select_from(Order))
+        tickets = db.scalar(select(func.count()).select_from(Ticket))
+        checked_in = db.scalar(select(func.count()).where(Ticket.checked_in_at.is_not(None)))
+        if not orders:
+            typer.echo('Nothing to wipe: there are no orders.')
+            return
+
+        typer.echo(f'This deletes {orders} test orders and {tickets} tickets ({checked_in} checked in).')
+        typer.echo('Events, tiers and staff logins are kept.')
+        if not yes and typer.prompt('Type WIPE to confirm') != 'WIPE':
+            typer.echo('Cancelled. Nothing was deleted.')
+            raise typer.Exit(1)
+
+        db.execute(delete(Ticket))
+        db.execute(delete(Order))  # order lines go with their orders
+        db.commit()
+        typer.secho(f'Wiped {orders} orders and {tickets} tickets.', fg='green')
+
+
+@cli.command()
 def resend_email(order_id: str):
     """Send the tickets email again (e.g. buyer can't find it, or it failed)."""
     from app.emails import send_tickets_email

@@ -317,3 +317,7 @@
   .tier-price { grid-area: price; justify-self: end; }
   .stepper { grid-area: stepper; justify-self: end; }
 }
+
+.checkout-hint a {
+  color: inherit;
+}

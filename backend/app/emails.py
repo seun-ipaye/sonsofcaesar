@@ -88,6 +88,7 @@ def render_tickets_email(order: Order) -> tuple[str, str]:
         button_label='View tickets',
         footer=(
             'Show each QR code at the door. Each one works once.<br>'
+            'All sales are final; if the event is cancelled you\'ll get a full refund.<br>'
             f'Order for {html.escape(order.buyer_name)} · {money(order.total_cents)} paid'
         ),
     )
