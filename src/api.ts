@@ -30,8 +30,20 @@ export type SaleEvent = {
   poster_url: string | null
   starts_at: string
   ends_at: string | null
+  sales_start: string | null // tickets can't be bought before this
   currency: string
   tiers: Tier[]
+}
+
+export type EventCard = {
+  slug: string
+  name: string
+  venue: string | null
+  poster_url: string | null
+  starts_at: string
+  sales_start: string | null
+  status: TierStatus
+  from_price_cents: number | null
 }
 
 // Mirrors the backend (app/pricing.py) so the total shows before checkout.
@@ -156,6 +168,7 @@ export type AdminEvent = {
   starts_at: string
   ends_at: string | null
   on_sale: boolean
+  sales_start: string | null
   tickets_sold: number
   capacity: number
   checked_in: number

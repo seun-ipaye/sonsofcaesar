@@ -32,8 +32,24 @@ class EventOut(BaseModel):
     poster_url: str | None
     starts_at: datetime
     ends_at: datetime | None
+    # When ticket sales open (None = already open). Before then the event is
+    # visible but nothing can be bought.
+    sales_start: datetime | None
     currency: str = 'cad'
     tiers: list[TierOut]
+
+
+class EventCard(BaseModel):
+    """One event on the /tickets choice screen."""
+
+    slug: str
+    name: str
+    venue: str | None
+    poster_url: str | None
+    starts_at: datetime
+    sales_start: datetime | None
+    status: TierStatus  # on_sale / not_yet / sold_out / ended (from its tiers)
+    from_price_cents: int | None  # cheapest tier still worth showing
 
 
 class CheckoutItem(BaseModel):
@@ -170,6 +186,7 @@ class AdminEventOut(BaseModel):
     starts_at: datetime
     ends_at: datetime | None
     on_sale: bool
+    sales_start: datetime | None
     tickets_sold: int
     capacity: int
     checked_in: int
@@ -212,15 +229,18 @@ class EventIn(BaseModel):
     poster_url: str | None = None
     starts_at: datetime
     ends_at: datetime | None = None
+    sales_start: datetime | None = None
 
 
 class EventPatch(BaseModel):
+    slug: str | None = Field(default=None, pattern=r'^[a-z0-9]+(-[a-z0-9]+)*$', max_length=80)
     name: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = None
     venue: str | None = None
     poster_url: str | None = None
     starts_at: datetime | None = None
     ends_at: datetime | None = None
+    sales_start: datetime | None = None
     on_sale: bool | None = None
 
 

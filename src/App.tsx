@@ -33,6 +33,7 @@ export default function App() {
       <Route element={<Site />}>
         <Route path="/home" element={<Home />} />
         <Route path="/tickets" element={<TicketsRoute />} />
+        <Route path="/tickets/:slug" element={<TicketsRoute />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/gallery/:party" element={<Party />} />
         <Route path="/t/:code" element={<TicketView />} />

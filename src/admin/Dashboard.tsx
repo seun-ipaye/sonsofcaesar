@@ -94,10 +94,12 @@ export default function Dashboard() {
         <Attendees event={event} onChange={loadEvent} />
       ) : (
         <Settings
+          // Fresh form per event, so switching events never carries values across
+          key={event.slug}
           event={event}
           onSaved={(e) => {
             setEvent(e)
-            loadList()
+            loadList(e.slug) // follows the event if its link name changed
           }}
         />
       )}
@@ -116,7 +118,13 @@ function Overview({ event }: { event: AdminEvent }) {
         <p>
           {formatWhen(event.starts_at)}
           {event.venue ? ` · ${event.venue}` : ''} ·{' '}
-          <span className={event.on_sale ? 'pill on' : 'pill'}>{event.on_sale ? 'on sale' : 'not on sale'}</span>
+          <span className={event.on_sale ? 'pill on' : 'pill'}>
+            {!event.on_sale
+              ? 'hidden'
+              : event.sales_start && new Date(event.sales_start) > new Date()
+                ? 'sale not open yet'
+                : 'on sale'}
+          </span>
         </p>
       </div>
 
@@ -321,6 +329,7 @@ const toCents = (v: string) => Math.round(parseFloat(v || '0') * 100)
 
 function Settings({ event, onSaved }: { event: AdminEvent; onSaved: (e: AdminEvent) => void }) {
   const [form, setForm] = useState({
+    slug: event.slug,
     name: event.name,
     venue: event.venue ?? '',
     description: event.description ?? '',
@@ -329,6 +338,8 @@ function Settings({ event, onSaved }: { event: AdminEvent; onSaved: (e: AdminEve
     ends_at: toLocalInput(event.ends_at),
   })
   const [msg, setMsg] = useState('')
+  const [salesStart, setSalesStart] = useState(toLocalInput(event.sales_start))
+  const [salesMsg, setSalesMsg] = useState('')
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [k]: e.target.value })
 
@@ -346,18 +357,53 @@ function Settings({ event, onSaved }: { event: AdminEvent; onSaved: (e: AdminEve
     <div className="settings">
       <section className="settings-block">
         <div className="settings-row">
-          <h2>Sales</h2>
+          <div>
+            <h2>Listed on /tickets</h2>
+            <p className="dash-note">Whether people can see this event on the tickets page.</p>
+          </div>
           <button
             className={`toggle ${event.on_sale ? 'on' : ''}`}
             onClick={() => {
               const next = !event.on_sale
-              if (window.confirm(next ? 'Open ticket sales for this event?' : 'Stop ticket sales for this event?'))
-                save({ on_sale: next }, next ? 'Sales are open.' : 'Sales are closed.')
+              if (window.confirm(next ? 'Show this event on the tickets page?' : 'Hide this event from the tickets page?'))
+                save({ on_sale: next }, next ? 'Listed.' : 'Hidden.')
             }}
           >
-            {event.on_sale ? 'on sale' : 'not on sale'}
+            {event.on_sale ? 'listed' : 'hidden'}
           </button>
         </div>
+        <form
+          className="settings-row sales-start"
+          onSubmit={async (e) => {
+            e.preventDefault()
+            setSalesMsg('')
+            try {
+              onSaved(
+                await api<AdminEvent>(`/admin/events/${event.slug}`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({ sales_start: fromLocalInput(salesStart) }),
+                }),
+              )
+              setSalesMsg(salesStart ? 'Saved. Tickets can be bought from then.' : 'Cleared: tickets can be bought now.')
+            } catch (err) {
+              setSalesMsg((err as Error).message)
+            }
+          }}
+        >
+          <label className="grow">
+            <span>Sales start (empty = on sale now)</span>
+            <input type="datetime-local" value={salesStart} onChange={(e) => setSalesStart(e.target.value)} />
+          </label>
+          <button className="dash-ghost">save</button>
+        </form>
+        {salesMsg && <p className="dash-note">{salesMsg}</p>}
+        <p className="dash-note">
+          {!event.on_sale
+            ? 'Hidden: nobody can see or buy tickets.'
+            : event.sales_start && new Date(event.sales_start) > new Date()
+              ? `Visible now. Tickets go on sale: ${new Date(event.sales_start).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' })}`
+              : 'Visible and on sale.'}
+        </p>
       </section>
 
       <form
@@ -365,6 +411,7 @@ function Settings({ event, onSaved }: { event: AdminEvent; onSaved: (e: AdminEve
         onSubmit={(e) => {
           e.preventDefault()
           save({
+            slug: form.slug,
             name: form.name,
             venue: form.venue || null,
             description: form.description || null,
@@ -378,6 +425,16 @@ function Settings({ event, onSaved }: { event: AdminEvent; onSaved: (e: AdminEve
         <label>
           <span>Name</span>
           <input value={form.name} onChange={set('name')} required />
+        </label>
+        <label>
+          <span>Link name · sonsofcaesar.xyz/tickets/{form.slug || '…'}</span>
+          <input
+            value={form.slug}
+            onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
+            required
+            pattern="[a-z0-9]+(-[a-z0-9]+)*"
+            title="Lowercase letters, numbers and single dashes"
+          />
         </label>
         <div className="settings-pair">
           <label>

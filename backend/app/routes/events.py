@@ -8,12 +8,15 @@ from app.db import get_db
 from app.inventory import remaining, taken_counts
 from app.models import Event, TicketType
 from app.pricing import service_fee_cents
-from app.schemas import EventOut, TierOut, TierStatus
+from app.schemas import EventCard, EventOut, TierOut, TierStatus
 
 router = APIRouter(prefix='/events', tags=['events'])
 
 
 def tier_status(tier: TicketType, left: int, now: datetime) -> TierStatus:
+    # The whole event's sale hasn't opened yet: every tier waits
+    if tier.event.sales_start and now < tier.event.sales_start:
+        return 'not_yet'
     if tier.sales_start and now < tier.sales_start:
         return 'not_yet'
     if tier.sales_end and now >= tier.sales_end:
@@ -35,6 +38,7 @@ def event_out(db: Session, event: Event) -> EventOut:
         poster_url=event.poster_url,
         starts_at=event.starts_at,
         ends_at=event.ends_at,
+        sales_start=event.sales_start,
         tiers=[
             TierOut(
                 id=t.id,
@@ -61,6 +65,33 @@ def upcoming_on_sale(db: Session):
         .where(Event.on_sale, func.coalesce(Event.ends_at, Event.starts_at) > now)
         .order_by(Event.starts_at)
     )
+
+
+@router.get('', response_model=list[EventCard])
+def list_events(db: Session = Depends(get_db)):
+    """Every listed, upcoming event, soonest first: the /tickets choice screen."""
+    cards = []
+    for event in db.scalars(upcoming_on_sale(db)):
+        out = event_out(db, event)
+        statuses = {t.status for t in out.tiers}
+        # The event's headline status: buyable if any tier is, else the most hopeful one
+        status: TierStatus = next(
+            (s for s in ('on_sale', 'not_yet', 'sold_out', 'ended') if s in statuses), 'ended'
+        )
+        prices = [t.price_cents for t in out.tiers if t.status in ('on_sale', 'not_yet')]
+        cards.append(
+            EventCard(
+                slug=event.slug,
+                name=event.name,
+                venue=event.venue,
+                poster_url=event.poster_url,
+                starts_at=event.starts_at,
+                sales_start=event.sales_start,
+                status=status,
+                from_price_cents=min(prices) if prices else None,
+            )
+        )
+    return cards
 
 
 @router.get('/current', response_model=EventOut)

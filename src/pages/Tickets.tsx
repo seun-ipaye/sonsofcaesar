@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import {
   api,
   ApiError,
   formatWhen,
   money,
   serviceFeeCents,
+  type EventCard,
   type SaleEvent,
   type Tier,
 } from "../api";
@@ -39,7 +40,78 @@ function tierNote(t: Tier) {
   return notes.join(" · ");
 }
 
+// /tickets and /tickets/:slug. With one event listed, /tickets goes straight to
+// it; with several, people pick one first.
 export default function Tickets() {
+  const { slug } = useParams();
+  const [params] = useSearchParams();
+  const [events, setEvents] = useState<EventCard[] | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (slug) return;
+    api<EventCard[]>("/events")
+      .then(setEvents)
+      .catch((e) => setError(e.message));
+  }, [slug]);
+
+  if (slug) return <EventTickets key={slug} slug={slug} />;
+  if (error) return <p className="tickets-status">{error}</p>;
+  if (!events) return <p className="tickets-status">Loading…</p>;
+  if (events.length === 0) return <NothingOnSale />;
+  // One event: show it right here (and keep ?cancelled working)
+  if (events.length === 1) return <EventTickets slug={events[0].slug} />;
+
+  return (
+    <section className="event-choice">
+      {params.get("cancelled") && (
+        <p className="tickets-banner">Checkout cancelled. You weren't charged.</p>
+      )}
+      <p className="tickets-kicker">tickets</p>
+      <div className="event-cards">
+        {events.map((e) => (
+          <Link key={e.slug} to={`/tickets/${e.slug}`} className="event-card">
+            <div className="event-card-flyer">
+              {e.poster_url ? (
+                <img src={e.poster_url} alt={`${e.name} flyer`} loading="lazy" />
+              ) : (
+                <span>{e.name}</span>
+              )}
+            </div>
+            <div className="event-card-info">
+              <h2>{e.name}</h2>
+              <p>{formatWhen(e.starts_at)}</p>
+              {e.venue && <p>{e.venue}</p>}
+              <p className="event-card-cta">
+                {e.status === "sold_out"
+                  ? "sold out"
+                  : e.status === "not_yet" && e.sales_start
+                    ? `on sale ${shortDate(e.sales_start)}`
+                    : e.from_price_cents !== null
+                      ? `from ${money(e.from_price_cents)} →`
+                      : "tickets →"}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function NothingOnSale() {
+  return (
+    <section className="tickets-empty">
+      <p className="tickets-kicker">tickets</p>
+      <h1>nothing on sale right now</h1>
+      <a href="https://instagram.com/socfrvr" target="_blank" rel="noreferrer">
+        @socfrvr for the next one
+      </a>
+    </section>
+  );
+}
+
+function EventTickets({ slug }: { slug: string }) {
   const [params] = useSearchParams();
   const [event, setEvent] = useState<SaleEvent | null>(null);
   const [loadError, setLoadError] = useState("");
@@ -57,7 +129,7 @@ export default function Tickets() {
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(() => {
-    return api<SaleEvent>("/events/current")
+    return api<SaleEvent>(`/events/${slug}`)
       .then((e) => {
         setEvent(e);
         // Keep chosen quantities within what's still available
@@ -75,7 +147,7 @@ export default function Tickets() {
           e instanceof ApiError && e.status === 404 ? "none" : e.message,
         ),
       );
-  }, []);
+  }, [slug]);
 
   // Coming back from Stripe's "back" link: release their held tickets right away,
   // then load (so the stock shown includes the tickets they just let go)
@@ -194,14 +266,8 @@ export default function Tickets() {
     return (
       <section className="tickets-empty">
         <p className="tickets-kicker">tickets</p>
-        <h1>nothing on sale right now</h1>
-        <a
-          href="https://instagram.com/socfrvr"
-          target="_blank"
-          rel="noreferrer"
-        >
-          @socfrvr for the next one
-        </a>
+        <h1>that event isn't on sale</h1>
+        <Link to="/tickets">see what's on</Link>
       </section>
     );
   }
@@ -239,6 +305,12 @@ export default function Tickets() {
             )}
           </div>
         </header>
+
+      {event.sales_start && new Date(event.sales_start) > new Date() && (
+        <p className="tickets-soon-banner">
+          Tickets go on sale <strong>{formatWhen(event.sales_start)}</strong>
+        </p>
+      )}
 
         <form className="tickets-form" onSubmit={buy}>
           <ul className="tiers">

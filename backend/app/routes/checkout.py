@@ -59,7 +59,7 @@ def create_stripe_session(order: Order, event: Event, tiers: dict[int, TicketTyp
         payment_intent_data={'metadata': {'order_id': str(order.id)}},
         expires_at=int((datetime.now(UTC) + timedelta(minutes=STRIPE_SESSION_MINUTES)).timestamp()),
         success_url=f'{settings.site_url}/order/{order.id}',
-        cancel_url=f'{settings.site_url}/tickets?cancelled={order.id}',
+        cancel_url=f'{settings.site_url}/tickets/{event.slug}?cancelled={order.id}',
     )
 
 
@@ -111,6 +111,8 @@ def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
         left = remaining(tier, taken[tier_id])
         status = tier_status(tier, left, now)
         if status == 'not_yet':
+            if event.sales_start and now < event.sales_start:
+                raise HTTPException(400, 'Tickets for this event are not on sale yet')
             raise HTTPException(400, f'{tier.name} is not on sale yet')
         if status == 'ended':
             raise HTTPException(400, f'{tier.name} sales have ended')

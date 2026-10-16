@@ -63,7 +63,9 @@ class Event(Base):
     poster_url: Mapped[str | None] = mapped_column(String(500))
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Listed on /tickets (people can see it). Buying also waits for sales_start, if set.
     on_sale: Mapped[bool] = mapped_column(default=False)
+    sales_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     ticket_types: Mapped[list['TicketType']] = relationship(

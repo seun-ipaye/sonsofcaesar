@@ -133,6 +133,7 @@ def event_summary(slug: str, db: Session = Depends(get_db)):
         starts_at=event.starts_at,
         ends_at=event.ends_at,
         on_sale=event.on_sale,
+        sales_start=event.sales_start,
         tickets_sold=sum(t.sold for t in tiers),
         capacity=sum(t.quantity for t in tiers if t.active),
         checked_in=sum(t.checked_in for t in tiers),
@@ -223,12 +224,16 @@ def create_event(body: EventIn, db: Session = Depends(get_db)):
 @router.patch('/events/{slug}', response_model=AdminEventOut)
 def update_event(slug: str, body: EventPatch, db: Session = Depends(get_db)):
     event = _event(db, slug)
-    for field, value in body.model_dump(exclude_unset=True).items():
-        if field in ('name', 'starts_at', 'on_sale') and value is None:
+    changes = body.model_dump(exclude_unset=True)
+    new_slug = changes.get('slug')
+    if new_slug and new_slug != slug and db.scalar(select(Event).where(Event.slug == new_slug)):
+        raise HTTPException(409, 'That link name is taken')
+    for field, value in changes.items():
+        if field in ('slug', 'name', 'starts_at', 'on_sale') and value is None:
             continue  # required fields can't be cleared
         setattr(event, field, value)
     db.commit()
-    return event_summary(slug, db)
+    return event_summary(event.slug, db)
 
 
 @router.post('/events/{slug}/tiers', response_model=AdminEventOut)

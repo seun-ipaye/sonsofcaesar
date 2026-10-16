@@ -422,3 +422,15 @@
     display: none;
   }
 }
+
+.sales-start {
+  align-items: flex-end;
+}
+
+.sales-start .grow {
+  flex: 1;
+}
+
+.settings-row .dash-note {
+  margin: 0.3rem 0 0;
+}
