@@ -43,7 +43,7 @@ def event_out(db: Session, event: Event) -> EventOut:
                 price_cents=t.price_cents,
                 fee_for_one_cents=service_fee_cents(t.price_cents),
                 max_per_order=t.max_per_order,
-                remaining=remaining(t, taken[t.id]),
+                buyable=min(remaining(t, taken[t.id]), t.max_per_order),
                 status=tier_status(t, remaining(t, taken[t.id]), now),
                 sales_start=t.sales_start,
                 sales_end=t.sales_end,

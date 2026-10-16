@@ -52,7 +52,9 @@ def test_current_event_and_tier_statuses(db):
     tiers = {t['name']: t for t in body['tiers']}
     assert 'Comp' not in tiers  # hidden tiers aren't shown
     assert tiers['Early Bird']['status'] == 'ended'
-    assert tiers['GA']['status'] == 'sold_out' and tiers['GA']['remaining'] == 0
+    assert tiers['GA']['status'] == 'sold_out' and tiers['GA']['buyable'] == 0
+    # Real stock is never sent: VIP has 5 left but shows at most its per-order limit
+    assert 'remaining' not in tiers['VIP'] and tiers['VIP']['buyable'] == 4
     assert tiers['VIP']['status'] == 'not_yet'
     assert tiers['GA']['fee_for_one_cents'] == service_fee_cents(2000)
 

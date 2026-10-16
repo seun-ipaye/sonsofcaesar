@@ -20,7 +20,8 @@ from app.qr import qr_png
 log = logging.getLogger(__name__)
 TZ = ZoneInfo('America/Toronto')
 # Always the live site: email apps can't load images from localhost
-LOGO_URL = 'https://www.sonsofcaesar.xyz/favicon.png'
+SITE_FOR_EMAIL = 'https://www.sonsofcaesar.xyz'
+LOGO_URL = f'{SITE_FOR_EMAIL}/favicon.png'
 
 
 def fmt_when(dt: datetime) -> str:
@@ -51,6 +52,17 @@ def _render(order: Order, tickets: list[Ticket], kicker: str, button_url: str, b
         </td></tr>'''
         for t in tickets
     )
+    # The event flyer, under the logo. Email apps need a full https:// link.
+    poster = e.poster_url or ''
+    if poster.startswith('/'):
+        poster = SITE_FOR_EMAIL + poster
+    poster_block = (
+        f'''<tr><td style="padding-bottom:28px">
+    <img src="{esc(poster)}" width="480" alt="{esc(e.name)} flyer" style="display:block;width:100%;max-width:480px;height:auto">
+  </td></tr>'''
+        if poster.startswith('https://')
+        else ''
+    )
     return f'''<!doctype html>
 <html><body style="margin:0;padding:0;background:#000">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#000">
@@ -60,6 +72,7 @@ def _render(order: Order, tickets: list[Ticket], kicker: str, button_url: str, b
   <tr><td style="text-align:center;padding-bottom:24px">
     <img src="{LOGO_URL}" width="64" height="64" alt="Sons of Caesar">
   </td></tr>
+  {poster_block}
   <tr><td style="text-align:center">
     <div style="font-size:12px;letter-spacing:4px;text-transform:uppercase;color:#888">{esc(kicker)}</div>
     <h1 style="font-size:32px;font-weight:400;letter-spacing:2px;margin:10px 0 6px">{esc(e.name)}</h1>

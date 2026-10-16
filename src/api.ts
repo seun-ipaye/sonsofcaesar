@@ -16,7 +16,7 @@ export type Tier = {
   price_cents: number
   fee_for_one_cents: number
   max_per_order: number
-  remaining: number
+  buyable: number // most you can buy now (capped at the per-order limit)
   status: TierStatus
   sales_start: string | null
   sales_end: string | null

@@ -73,14 +73,14 @@ def test_happy_path_holds_stock(db, event, fake_stripe):
 
     # The hold shows up as fewer tickets left
     tiers = {t['name']: t for t in TestClient(app).get('/events/current').json()['tiers']}
-    assert tiers['GA']['remaining'] == 3
+    assert tiers['GA']['buyable'] == 3
 
 
 @pytest.mark.parametrize(
     'tier,qty,status,msg',
     [
         ('GA', 5, 400, 'Max 4 GA per order'),
-        ('VIP', 2, 409, 'Only 1 VIP left'),
+        ('VIP', 2, 409, 'Not enough VIP tickets left'),
         ('Early', 1, 400, 'Early sales have ended'),
     ],
 )

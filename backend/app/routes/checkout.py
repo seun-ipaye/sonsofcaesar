@@ -117,8 +117,9 @@ def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
         if qty > tier.max_per_order:
             raise HTTPException(400, f'Max {tier.max_per_order} {tier.name} per order')
         if qty > left:
+            # Deliberately no number: stock levels stay private
             raise HTTPException(
-                409, f'{tier.name} is sold out' if left == 0 else f'Only {left} {tier.name} left'
+                409, f'{tier.name} is sold out' if left == 0 else f'Not enough {tier.name} tickets left'
             )
 
     subtotal = sum(tiers[tid].price_cents * qty for tid, qty in wanted.items())

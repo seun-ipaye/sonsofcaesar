@@ -16,7 +16,9 @@ class TierOut(BaseModel):
     # Fee if you buy just one; the real fee is worked out on the whole order
     fee_for_one_cents: int
     max_per_order: int
-    remaining: int
+    # How many you can buy right now: never more than the per-order limit, so the
+    # real stock level isn't revealed (it shows only as "sold out" at zero)
+    buyable: int
     status: TierStatus
     sales_start: datetime | None
     sales_end: datetime | None
