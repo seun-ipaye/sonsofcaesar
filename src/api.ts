@@ -5,6 +5,7 @@ export type TicketEvent = {
   venue: string | null
   starts_at: string
   ends_at: string | null
+  address?: string | null // secret address: only sent to valid ticket holders
 }
 
 export type TierStatus = 'on_sale' | 'sold_out' | 'not_yet' | 'ended'
@@ -169,6 +170,9 @@ export type AdminEvent = {
   ends_at: string | null
   on_sale: boolean
   sales_start: string | null
+  secret_address: boolean
+  address: string | null
+  address_emailed_at: string | null
   tickets_sold: number
   capacity: number
   checked_in: number

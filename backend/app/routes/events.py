@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.inventory import remaining, taken_counts
-from app.models import Event, TicketType
+from app.models import Event, TicketType, public_venue
 from app.pricing import service_fee_cents
 from app.schemas import EventCard, EventOut, TierOut, TierStatus
 
@@ -34,7 +34,7 @@ def event_out(db: Session, event: Event) -> EventOut:
         slug=event.slug,
         name=event.name,
         description=event.description,
-        venue=event.venue,
+        venue=public_venue(event),
         poster_url=event.poster_url,
         starts_at=event.starts_at,
         ends_at=event.ends_at,
@@ -83,7 +83,7 @@ def list_events(db: Session = Depends(get_db)):
             EventCard(
                 slug=event.slug,
                 name=event.name,
-                venue=event.venue,
+                venue=public_venue(event),
                 poster_url=event.poster_url,
                 starts_at=event.starts_at,
                 sales_start=event.sales_start,

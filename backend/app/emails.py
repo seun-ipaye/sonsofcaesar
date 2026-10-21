@@ -6,6 +6,7 @@
 
 import html
 import logging
+from urllib.parse import quote_plus
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
@@ -14,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import Order, OrderStatus, Ticket
+from app.models import Event, Order, OrderStatus, Ticket, TicketStatus, public_venue
 from app.qr import qr_png
 
 log = logging.getLogger(__name__)
@@ -36,6 +37,24 @@ def mask_email(email: str) -> str:
     """se•••@gmail.com: enough to recognise your own address, not enough to read it."""
     local, _, domain = email.partition('@')
     return f'{local[:2]}•••@{domain}'
+
+
+def maps_url(address: str) -> str:
+    return 'https://www.google.com/maps/search/?api=1&query=' + quote_plus(address)
+
+
+def venue_or_address(e: Event) -> str:
+    """Ticket holders get the real address (with a Maps link) for secret-address
+    events; everyone else's venue line stays as it is."""
+    esc = html.escape
+    if e.secret_address and e.address:
+        return f'''<div style="margin-top:14px;padding:12px 14px;border:1px solid #333;font-size:15px;color:#fff">
+      <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#888;margin-bottom:6px">Address</div>
+      {esc(e.address)}<br>
+      <a href="{maps_url(e.address)}" style="font-size:12px;color:#ccc">Open in Maps</a>
+    </div>'''
+    venue = public_venue(e)
+    return f'<div style="font-size:14px;color:#ccc;margin-top:2px">{esc(venue)}</div>' if venue else ''
 
 
 def _render(order: Order, tickets: list[Ticket], kicker: str, button_url: str, button_label: str, footer: str) -> str:
@@ -77,7 +96,7 @@ def _render(order: Order, tickets: list[Ticket], kicker: str, button_url: str, b
     <div style="font-size:12px;letter-spacing:4px;text-transform:uppercase;color:#888">{esc(kicker)}</div>
     <h1 style="font-size:32px;font-weight:400;letter-spacing:2px;margin:10px 0 6px">{esc(e.name)}</h1>
     <div style="font-size:14px;color:#ccc">{fmt_when(e.starts_at)}</div>
-    {f'<div style="font-size:14px;color:#ccc;margin-top:2px">{esc(e.venue)}</div>' if e.venue else ''}
+    {venue_or_address(e)}
   </td></tr>
   <tr><td style="text-align:center;padding:28px 0">
     <a href="{button_url}" style="display:inline-block;border:1px solid #fff;color:#fff;text-decoration:none;
@@ -180,3 +199,65 @@ def send_friend_emails(db: Session, order_id) -> int:
     if sent:
         log.info('Order %s: sent %s tickets to friends', order.id, sent)
     return sent
+
+
+def render_address_email(event: Event, button_url: str) -> tuple[str, str]:
+    """"Here's the address": sent from the dashboard when it's added or changed."""
+    esc = html.escape
+    body = f'''<!doctype html>
+<html><body style="margin:0;padding:0;background:#000">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#000">
+<tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+       style="max-width:480px;font-family:Helvetica,Arial,sans-serif;color:#fff">
+  <tr><td style="text-align:center;padding-bottom:24px">
+    <img src="{LOGO_URL}" width="64" height="64" alt="Sons of Caesar">
+  </td></tr>
+  <tr><td style="text-align:center">
+    <div style="font-size:12px;letter-spacing:4px;text-transform:uppercase;color:#888">The address</div>
+    <h1 style="font-size:32px;font-weight:400;letter-spacing:2px;margin:10px 0 6px">{esc(event.name)}</h1>
+    <div style="font-size:14px;color:#ccc">{fmt_when(event.starts_at)}</div>
+    {venue_or_address(event)}
+  </td></tr>
+  <tr><td style="text-align:center;padding:28px 0">
+    <a href="{button_url}" style="display:inline-block;border:1px solid #fff;color:#fff;text-decoration:none;
+       padding:12px 28px;font-size:12px;letter-spacing:3px;text-transform:uppercase">View tickets</a>
+  </td></tr>
+  <tr><td style="border-top:1px solid #222;padding-top:20px;font-size:12px;line-height:1.7;color:#888;text-align:center">
+    Please keep the address to ticket holders.<br>
+    Questions? DM <a href="https://instagram.com/socfrvr" style="color:#ccc">@socfrvr</a>
+  </td></tr>
+</table></td></tr></table></body></html>'''
+    return f'The address for {event.name}', body
+
+
+def address_recipients(db: Session, event: Event) -> list[tuple[str, str]]:
+    """Everyone holding a valid ticket: buyers (link to their order) and friends
+    they sent tickets to (link to that ticket). One email per address."""
+    seen: dict[str, str] = {}
+    orders = db.scalars(select(Order).where(Order.event_id == event.id, Order.status == OrderStatus.paid))
+    for order in orders:
+        valid = [t for t in order.tickets if t.status == TicketStatus.valid]
+        if not valid:
+            continue
+        seen.setdefault(order.buyer_email.lower(), f'{settings.site_url}/order/{order.id}')
+        for t in valid:
+            if t.holder_email:
+                seen.setdefault(t.holder_email.lower(), f'{settings.site_url}/t/{t.code}')
+    return list(seen.items())
+
+
+def send_address_emails(db: Session, event: Event) -> int:
+    """Email the secret address to every ticket holder, in batches of 100. Returns count."""
+    recipients = address_recipients(db, event)
+    resend.api_key = settings.resend_api_key
+    for start in range(0, len(recipients), 100):
+        batch = []
+        for email, link in recipients[start : start + 100]:
+            subject, body = render_address_email(event, link)
+            batch.append({'from': settings.email_from, 'to': [email], 'subject': subject, 'html': body})
+        resend.Batch.send(batch)
+    event.address_emailed_at = datetime.now(UTC)
+    db.commit()
+    log.info('Address emailed to %s ticket holders for %s', len(recipients), event.slug)
+    return len(recipients)

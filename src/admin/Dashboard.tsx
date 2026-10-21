@@ -406,6 +406,8 @@ function Settings({ event, onSaved }: { event: AdminEvent; onSaved: (e: AdminEve
         </p>
       </section>
 
+      <SecretAddressSettings event={event} onSaved={onSaved} />
+
       <form
         className="settings-block"
         onSubmit={(e) => {
@@ -612,5 +614,101 @@ function NewEvent({ onCreated, onCancel }: { onCreated: (slug: string) => void; 
         )}
       </div>
     </form>
+  )
+}
+
+// ---------- secret address ----------
+
+function SecretAddressSettings({ event, onSaved }: { event: AdminEvent; onSaved: (e: AdminEvent) => void }) {
+  const [address, setAddress] = useState(event.address ?? '')
+  const [msg, setMsg] = useState('')
+  const [sending, setSending] = useState(false)
+
+  const patch = async (body: object, done: string) => {
+    setMsg('')
+    try {
+      onSaved(await api<AdminEvent>(`/admin/events/${event.slug}`, { method: 'PATCH', body: JSON.stringify(body) }))
+      setMsg(done)
+    } catch (e) {
+      setMsg((e as Error).message)
+    }
+  }
+
+  const emailEveryone = async () => {
+    setMsg('')
+    try {
+      const { recipients } = await api<{ recipients: number }>(`/admin/events/${event.slug}/email-address`)
+      if (recipients === 0) return setMsg('Nobody has a ticket yet.')
+      const again = event.address_emailed_at ? ' It was already sent once; this sends it again.' : ''
+      if (!window.confirm(`Email the address to ${recipients} ${recipients === 1 ? 'person' : 'people'}?${again}`)) return
+      setSending(true)
+      const r = await api<{ sent: number }>(`/admin/events/${event.slug}/email-address`, { method: 'POST' })
+      setMsg(`Sent to ${r.sent} ${r.sent === 1 ? 'person' : 'people'}.`)
+      onSaved(await api<AdminEvent>(`/admin/events/${event.slug}`))
+    } catch (e) {
+      setMsg((e as Error).message)
+    }
+    setSending(false)
+  }
+
+  const dirty = address.trim() !== (event.address ?? '')
+
+  return (
+    <section className="settings-block">
+      <div className="settings-row">
+        <div>
+          <h2>Secret address</h2>
+          <p className="dash-note">
+            On: the public page says "Address sent after purchase". Only ticket holders see the address, under their
+            QR codes and in their ticket email.
+          </p>
+        </div>
+        <button
+          className={`toggle ${event.secret_address ? 'on' : ''}`}
+          onClick={() =>
+            patch(
+              { secret_address: !event.secret_address },
+              event.secret_address ? 'Secret address off: the venue shows publicly again.' : 'Secret address on.',
+            )
+          }
+        >
+          {event.secret_address ? 'on' : 'off'}
+        </button>
+      </div>
+
+      {event.secret_address && (
+        <>
+          <form
+            className="settings-row sales-start"
+            onSubmit={(e) => {
+              e.preventDefault()
+              patch(
+                { address: address.trim() || null },
+                'Address saved. Ticket pages show it now; use the button below to email it to people who already bought.',
+              )
+            }}
+          >
+            <label className="grow">
+              <span>Address (private)</span>
+              <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="1234 Example St, Windsor" />
+            </label>
+            {dirty && <button className="dash-ghost">save</button>}
+          </form>
+
+          <div className="settings-row">
+            <button className="dash-ghost" onClick={emailEveryone} disabled={sending || !event.address || dirty}>
+              {sending ? 'sending…' : 'email address to all ticket holders'}
+            </button>
+            <span className="dash-note">
+              {event.address_emailed_at
+                ? `Last sent ${new Date(event.address_emailed_at).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' })}`
+                : 'Not sent yet'}
+            </span>
+          </div>
+          {!event.address && <p className="dash-note">Add the address so buyers get it.</p>}
+        </>
+      )}
+      {msg && <p className="dash-note">{msg}</p>}
+    </section>
   )
 }

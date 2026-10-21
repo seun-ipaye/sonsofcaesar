@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.emails import mask_email, send_tickets_email
-from app.models import Order, OrderStatus, Ticket
+from app.models import Order, OrderStatus, Ticket, TicketStatus, public_venue
 from app.qr import qr_png, qr_svg
 from app.schemas import OrderPageOut, ResendIn, TicketEventOut, TicketOut, TicketPageOut
 
@@ -37,14 +37,19 @@ def _ticket_out(t: Ticket) -> TicketOut:
     )
 
 
-def _event_out(e) -> TicketEventOut:
-    return TicketEventOut(name=e.name, venue=e.venue, starts_at=e.starts_at, ends_at=e.ends_at)
+def _event_out(e, holds_valid_ticket: bool) -> TicketEventOut:
+    # The secret address only goes to someone with a valid (paid, not refunded) ticket
+    address = e.address if (e.secret_address and e.address and holds_valid_ticket) else None
+    return TicketEventOut(
+        name=e.name, venue=public_venue(e), starts_at=e.starts_at, ends_at=e.ends_at, address=address
+    )
 
 
 @router.get('/tickets/{code}', response_model=TicketPageOut)
 def get_ticket(code: str, db: Session = Depends(get_db)):
     t = _ticket(db, code)
-    return TicketPageOut(**_ticket_out(t).model_dump(), event=_event_out(t.event))
+    valid = t.status == TicketStatus.valid and t.order.status == OrderStatus.paid
+    return TicketPageOut(**_ticket_out(t).model_dump(), event=_event_out(t.event, valid))
 
 
 @router.get('/tickets/{code}/qr.png')
@@ -72,7 +77,10 @@ def get_order(order_id: uuid.UUID, db: Session = Depends(get_db)):
         email_hint=mask_email(order.buyer_email),
         resends_left=max(MAX_RESENDS - order.resend_count, 0),
         total_cents=order.total_cents,
-        event=_event_out(order.event),
+        event=_event_out(
+            order.event,
+            order.status == OrderStatus.paid and any(t.status == TicketStatus.valid for t in order.tickets),
+        ),
         tickets=[_ticket_out(t) for t in sorted(order.tickets, key=lambda t: t.ticket_type.sort_order)],
     )
 

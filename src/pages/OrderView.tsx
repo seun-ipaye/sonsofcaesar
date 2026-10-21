@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router'
 import { api, ApiError, formatWhen, money, type OrderPage } from '../api'
 import { TicketCard } from './TicketView'
+import SecretAddress from './SecretAddress'
 import Chevron from '../Chevron'
 import './TicketView.css'
 import './OrderView.css'
@@ -64,7 +65,7 @@ export default function OrderView() {
       <p className="order-kicker">{order.status === 'refunded' ? 'refunded' : "you're in"}</p>
       <h1>{order.event.name}</h1>
       <p className="ticket-when">{formatWhen(order.event.starts_at)}</p>
-      {order.event.venue && <p className="ticket-when">{order.event.venue}</p>}
+      {order.event.venue && !order.event.address && <p className="ticket-when">{order.event.venue}</p>}
       <p className="order-note">
         {order.tickets.length} {order.tickets.length === 1 ? 'ticket' : 'tickets'} for {order.buyer_name} ·{' '}
         {money(order.total_cents)}. We've emailed them to you too. Each QR works once at the door.
@@ -76,6 +77,8 @@ export default function OrderView() {
           </a>
         ))}
       </div>
+
+      <SecretAddress address={order.event.address} />
 
       {order.status === 'paid' && <ResendTickets order={order} />}
     </section>

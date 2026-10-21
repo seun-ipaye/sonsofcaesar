@@ -106,7 +106,10 @@ def event_summary(slug: str, db: Session = Depends(get_db)):
     sold = _ticket_price.where(Ticket.event_id == event.id).subquery()
     day = func.to_char(func.timezone('America/Toronto', sold.c.paid_at), 'YYYY-MM-DD')
     by_day = db.execute(
-        select(day, func.count(), func.coalesce(func.sum(sold.c.unit_price_cents), 0)).group_by(day).order_by(day)
+        select(day, func.count(), func.coalesce(func.sum(sold.c.unit_price_cents), 0))
+        .where(sold.c.paid_at.is_not(None))  # a hand-fixed order without a paid time can't crash the chart
+        .group_by(day)
+        .order_by(day)
     ).all()
 
     tiers = [
@@ -134,6 +137,9 @@ def event_summary(slug: str, db: Session = Depends(get_db)):
         ends_at=event.ends_at,
         on_sale=event.on_sale,
         sales_start=event.sales_start,
+        secret_address=event.secret_address,
+        address=event.address,
+        address_emailed_at=event.address_emailed_at,
         tickets_sold=sum(t.sold for t in tiers),
         capacity=sum(t.quantity for t in tiers if t.active),
         checked_in=sum(t.checked_in for t in tiers),
@@ -229,7 +235,7 @@ def update_event(slug: str, body: EventPatch, db: Session = Depends(get_db)):
     if new_slug and new_slug != slug and db.scalar(select(Event).where(Event.slug == new_slug)):
         raise HTTPException(409, 'That link name is taken')
     for field, value in changes.items():
-        if field in ('slug', 'name', 'starts_at', 'on_sale') and value is None:
+        if field in ('slug', 'name', 'starts_at', 'on_sale', 'secret_address') and value is None:
             continue  # required fields can't be cleared
         setattr(event, field, value)
     db.commit()
@@ -269,3 +275,28 @@ def list_staff(db: Session = Depends(get_db)):
         for s in db.scalars(select(Staff).order_by(Staff.name))
     ]
 
+
+
+@router.post('/events/{slug}/email-address')
+def email_address(slug: str, db: Session = Depends(get_db)):
+    """Send the secret address to every ticket holder (buyers + friends sent a ticket)."""
+    from app.emails import address_recipients, send_address_emails
+
+    event = _event(db, slug)
+    if not (event.secret_address and event.address):
+        raise HTTPException(400, 'Turn on Secret address and fill in the address first')
+    if not address_recipients(db, event):
+        raise HTTPException(400, 'Nobody has a ticket yet')
+    try:
+        sent = send_address_emails(db, event)
+    except Exception:
+        raise HTTPException(502, "Couldn't send right now. Try again in a minute.")
+    return {'sent': sent}
+
+
+@router.get('/events/{slug}/email-address')
+def email_address_preview(slug: str, db: Session = Depends(get_db)):
+    """How many people the address email would go to (shown before confirming)."""
+    from app.emails import address_recipients
+
+    return {'recipients': len(address_recipients(db, _event(db, slug)))}

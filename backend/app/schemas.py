@@ -86,6 +86,8 @@ class TicketEventOut(BaseModel):
     venue: str | None
     starts_at: datetime
     ends_at: datetime | None
+    # Secret address: only filled in for someone holding a valid ticket
+    address: str | None = None
 
 
 class TicketPageOut(TicketOut):
@@ -187,6 +189,9 @@ class AdminEventOut(BaseModel):
     ends_at: datetime | None
     on_sale: bool
     sales_start: datetime | None
+    secret_address: bool
+    address: str | None
+    address_emailed_at: datetime | None
     tickets_sold: int
     capacity: int
     checked_in: int
@@ -242,6 +247,8 @@ class EventPatch(BaseModel):
     ends_at: datetime | None = None
     sales_start: datetime | None = None
     on_sale: bool | None = None
+    secret_address: bool | None = None
+    address: str | None = Field(default=None, max_length=300)
 
 
 class TierIn(BaseModel):

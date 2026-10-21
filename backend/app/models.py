@@ -52,6 +52,9 @@ class StaffRole(str, enum.Enum):
     door = 'door'  # scan + lookup only
 
 
+SECRET_VENUE_TEXT = 'Address sent after purchase'
+
+
 class Event(Base):
     __tablename__ = 'events'
 
@@ -66,6 +69,11 @@ class Event(Base):
     # Listed on /tickets (people can see it). Buying also waits for sales_start, if set.
     on_sale: Mapped[bool] = mapped_column(default=False)
     sales_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Secret address (e.g. a house party): the public page says "Address sent after
+    # purchase"; only valid ticket holders see `address`, on their tickets and emails.
+    secret_address: Mapped[bool] = mapped_column(default=False, server_default='false')
+    address: Mapped[str | None] = mapped_column(String(300))
+    address_emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     ticket_types: Mapped[list['TicketType']] = relationship(
@@ -206,3 +214,8 @@ class LoginFailure(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(320), index=True)
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+def public_venue(event: Event) -> str | None:
+    """What the public sees as the venue: never the secret address."""
+    return SECRET_VENUE_TEXT if event.secret_address else event.venue

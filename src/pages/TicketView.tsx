@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router'
 import { api, ApiError, formatWhen, qrUrl, type TicketPage } from '../api'
+import SecretAddress from './SecretAddress'
 import './TicketView.css'
 
 // One ticket, full screen-ish: what you show at the door.
@@ -21,9 +22,10 @@ export default function TicketView() {
   return (
     <section className="ticket-view">
       <TicketCard ticket={ticket} />
+      <SecretAddress address={ticket.event.address} />
       <h1>{ticket.event.name}</h1>
       <p className="ticket-when">{formatWhen(ticket.event.starts_at)}</p>
-      {ticket.event.venue && <p className="ticket-when">{ticket.event.venue}</p>}
+      {ticket.event.venue && !ticket.event.address && <p className="ticket-when">{ticket.event.venue}</p>}
     </section>
   )
 }

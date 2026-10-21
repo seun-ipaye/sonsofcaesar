@@ -71,3 +71,38 @@
   font-size: 0.8rem;
   opacity: 0.6;
 }
+
+.secret-address {
+  margin-top: 2.5rem;
+  width: min(420px, 100%);
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 1.1rem 1.25rem;
+  text-align: center;
+}
+
+.secret-address-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.secret-address-text {
+  font-size: 1.15rem;
+  margin: 0.5rem 0 0.7rem;
+  line-height: 1.4;
+}
+
+.secret-address a {
+  color: #fff;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.secret-address p {
+  margin: 0.8rem 0 0;
+  font-size: 0.75rem;
+  opacity: 0.5;
+}
