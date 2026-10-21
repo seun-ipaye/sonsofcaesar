@@ -33,6 +33,7 @@ def _ticket(db: Session, code: str) -> Ticket:
 def _ticket_out(t: Ticket) -> TicketOut:
     return TicketOut(
         code=t.code, tier=t.ticket_type.name, holder_name=t.holder_name,
+        gender=t.gender.value if t.gender else None,
         status=t.status.value, checked_in_at=t.checked_in_at,
     )
 

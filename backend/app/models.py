@@ -47,6 +47,16 @@ class TicketStatus(str, enum.Enum):
     void = 'void'  # refunded or cancelled; rejected at the door
 
 
+class Gender(str, enum.Enum):
+    """For tiers priced by gender. Shown as "Ladies" / "Men"."""
+
+    ladies = 'ladies'
+    men = 'men'
+
+
+GENDER_LABEL = {Gender.ladies: 'Ladies', Gender.men: 'Men'}
+
+
 class StaffRole(str, enum.Enum):
     admin = 'admin'  # everything
     door = 'door'  # scan + lookup only
@@ -102,8 +112,20 @@ class TicketType(Base):
     sales_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     active: Mapped[bool] = mapped_column(default=True)
+    # Priced by gender: every ticket is Ladies or Men, each with its own price.
+    # Both share this tier's one `quantity`. (price_cents is unused while on.)
+    gendered: Mapped[bool] = mapped_column(default=False, server_default='false')
+    price_ladies_cents: Mapped[int | None] = mapped_column(Integer)
+    price_men_cents: Mapped[int | None] = mapped_column(Integer)
 
     event: Mapped[Event] = relationship(back_populates='ticket_types')
+
+    def price_for(self, gender: 'Gender | None') -> int:
+        if self.gendered and gender == Gender.ladies:
+            return self.price_ladies_cents or 0
+        if self.gendered and gender == Gender.men:
+            return self.price_men_cents or 0
+        return self.price_cents
 
 
 class Order(Base):
@@ -144,6 +166,7 @@ class OrderItem(Base):
     ticket_type_id: Mapped[int] = mapped_column(ForeignKey('ticket_types.id'), index=True)
     quantity: Mapped[int] = mapped_column(Integer)
     unit_price_cents: Mapped[int] = mapped_column(Integer)
+    gender: Mapped[Gender | None] = mapped_column(_enum(Gender))  # for gender-priced tiers
     # Name for each ticket in this line, in order (kept until payment creates the tickets)
     holder_names: Mapped[list[str]] = mapped_column(JSON, default=list)
     # Optional email per ticket ("send it to them too"), same order; None = don't send
@@ -164,6 +187,7 @@ class Ticket(Base):
     event_id: Mapped[int] = mapped_column(ForeignKey('events.id'), index=True)
     ticket_type_id: Mapped[int] = mapped_column(ForeignKey('ticket_types.id'), index=True)
     holder_name: Mapped[str] = mapped_column(String(200))
+    gender: Mapped[Gender | None] = mapped_column(_enum(Gender))  # shown at the door (pink / blue)
     # Set when the buyer sent this ticket to a friend; they get their own email
     holder_email: Mapped[str | None] = mapped_column(String(320))
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # friend's email sent

@@ -157,13 +157,27 @@ function Overview({ event }: { event: AdminEvent }) {
                   {t.name}
                   {!t.active && <span className="dash-note"> hidden</span>}
                 </td>
-                <td className="num">{money(t.price_cents)}</td>
+                <td className="num">
+                  {t.gendered ? (
+                    <>
+                      L {money(t.price_ladies_cents ?? 0)}
+                      <div className="dash-sub">M {money(t.price_men_cents ?? 0)}</div>
+                    </>
+                  ) : (
+                    money(t.price_cents)
+                  )}
+                </td>
                 <td>
                   <div className="meter" title={`${t.sold} of ${t.quantity}`}>
                     <div style={{ width: `${t.quantity ? (t.sold / t.quantity) * 100 : 0}%` }} />
                   </div>
                   <span className="meter-text">
                     {t.sold} / {t.quantity}
+                    {t.gendered && t.sold > 0 && (
+                      <div className="dash-sub">
+                        {t.sold_ladies} ladies · {t.sold_men} men
+                      </div>
+                    )}
                   </span>
                 </td>
                 <td className="num">{t.held || '—'}</td>
@@ -283,7 +297,10 @@ function Attendees({ event, onChange }: { event: AdminEvent; onChange: () => voi
                   {a.holder_name}
                   {a.holder_email && <div className="dash-sub">{a.holder_email}</div>}
                 </td>
-                <td>{a.tier}</td>
+                <td>
+                  {a.tier}
+                  {a.gender && <div className="dash-sub">{a.gender === 'ladies' ? 'Ladies' : 'Men'}</div>}
+                </td>
                 <td>
                   {a.status === 'void' ? (
                     'void'
@@ -475,6 +492,9 @@ function Settings({ event, onSaved }: { event: AdminEvent; onSaved: (e: AdminEve
   )
 }
 
+// Dollars with up to 2 decimals, e.g. 15 or 15.50
+const MONEY_PATTERN = String.raw`\d+(\.\d{1,2})?`
+
 function TierEditor({
   tier,
   eventSlug,
@@ -484,7 +504,7 @@ function TierEditor({
   eventSlug?: string
   onSaved: (e: AdminEvent) => void
 }) {
-  const blank = { name: '', price: '', quantity: '', max: '4', sales_end: '' }
+  const blank = { name: '', price: '', quantity: '', max: '4', sales_end: '', gendered: false, ladies: '', men: '' }
   const initial = tier
     ? {
         name: tier.name,
@@ -492,6 +512,9 @@ function TierEditor({
         quantity: String(tier.quantity),
         max: String(tier.max_per_order),
         sales_end: toLocalInput(tier.sales_end),
+        gendered: tier.gendered,
+        ladies: tier.price_ladies_cents != null ? dollars(tier.price_ladies_cents) : '',
+        men: tier.price_men_cents != null ? dollars(tier.price_men_cents) : '',
       }
     : blank
   const [f, setF] = useState(initial)
@@ -504,7 +527,11 @@ function TierEditor({
     setMsg('')
     const body = {
       name: f.name,
-      price_cents: toCents(f.price),
+      // Gender-priced tiers don't use the single price; keep it at the cheaper side
+      price_cents: f.gendered ? Math.min(toCents(f.ladies), toCents(f.men)) : toCents(f.price),
+      gendered: f.gendered,
+      price_ladies_cents: f.gendered ? toCents(f.ladies) : null,
+      price_men_cents: f.gendered ? toCents(f.men) : null,
       quantity: Number(f.quantity),
       max_per_order: Number(f.max),
       sales_end: fromLocalInput(f.sales_end),
@@ -528,10 +555,23 @@ function TierEditor({
         <span>{tier ? `Tier · ${tier.sold} sold` : 'New tier'}</span>
         <input value={f.name} onChange={set('name')} placeholder="e.g. Early Bird" required />
       </label>
-      <label>
-        <span>Price $</span>
-        <input value={f.price} onChange={set('price')} inputMode="decimal" required pattern="\d+(\.\d{1,2})?" />
-      </label>
+      {f.gendered ? (
+        <div className="gender-prices">
+          <label>
+            <span>Ladies $</span>
+            <input value={f.ladies} onChange={set('ladies')} inputMode="decimal" required pattern={MONEY_PATTERN} />
+          </label>
+          <label>
+            <span>Men $</span>
+            <input value={f.men} onChange={set('men')} inputMode="decimal" required pattern={MONEY_PATTERN} />
+          </label>
+        </div>
+      ) : (
+        <label>
+          <span>Price $</span>
+          <input value={f.price} onChange={set('price')} inputMode="decimal" required pattern={MONEY_PATTERN} />
+        </label>
+      )}
       <label>
         <span>Quantity</span>
         <input value={f.quantity} onChange={set('quantity')} inputMode="numeric" required pattern="\d+" />
@@ -552,6 +592,17 @@ function TierEditor({
           </button>
         )}
       </div>
+      <label className="gender-toggle">
+        <input
+          type="checkbox"
+          checked={f.gendered}
+          onChange={(e) => setF({ ...f, gendered: e.target.checked })}
+        />
+        <span>
+          Priced by gender (Ladies / Men){' '}
+          {tier?.gendered && tier.sold > 0 ? `· ${tier.sold_ladies} ladies, ${tier.sold_men} men sold` : '· they share the quantity'}
+        </span>
+      </label>
       {msg && <p className="dash-note tier-msg">{msg}</p>}
     </form>
   )

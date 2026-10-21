@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import get_db
 from app.inventory import remaining, taken_counts
-from app.models import Event, Order, OrderItem, OrderStatus, TicketType
+from app.models import GENDER_LABEL, Event, Gender, Order, OrderItem, OrderStatus, TicketType
 from app.pricing import service_fee_cents
 from app.routes.events import tier_status, upcoming_on_sale
 from app.schemas import CheckoutIn, CheckoutOut
@@ -27,6 +27,12 @@ STRIPE_SESSION_MINUTES = 30
 HOLD_MINUTES = 32
 
 
+def line_name(event: Event, tier: TicketType, gender: Gender | None) -> str:
+    # e.g. "Asylum · GA · Ladies"
+    parts = [event.name, tier.name] + ([GENDER_LABEL[gender]] if gender else [])
+    return ' · '.join(parts)
+
+
 def create_stripe_session(order: Order, event: Event, tiers: dict[int, TicketType]) -> stripe.checkout.Session:
     line_items = [
         {
@@ -34,7 +40,7 @@ def create_stripe_session(order: Order, event: Event, tiers: dict[int, TicketTyp
             'price_data': {
                 'currency': order.currency,
                 'unit_amount': item.unit_price_cents,
-                'product_data': {'name': f'{event.name} · {tiers[item.ticket_type_id].name}'},
+                'product_data': {'name': line_name(event, tiers[item.ticket_type_id], item.gender)},
             },
         }
         for item in order.items
@@ -74,21 +80,30 @@ def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
     if not event:
         raise HTTPException(404, 'This event is not on sale')
 
-    wanted: dict[int, int] = {}
-    names: dict[int, list[str]] = {}
-    emails: dict[int, list[str | None]] = {}
+    # One line per (tier, gender). Gender-priced tiers can have a Ladies line and a
+    # Men line; both draw from the tier's one shared quantity.
+    lines: dict[tuple[int, Gender | None], dict] = {}
     buyer_name = body.name.strip()
     for item in body.items:
-        if item.tier_id in wanted:
+        gender = Gender(item.gender) if item.gender else None
+        key = (item.tier_id, gender)
+        if key in lines:
             raise HTTPException(400, 'Each ticket type should appear once')
         if len(item.names) > item.quantity or len(item.emails) > item.quantity:
             raise HTTPException(400, 'More names than tickets')
-        wanted[item.tier_id] = item.quantity
         given = [(n or '').strip()[:200] for n in item.names]
-        names[item.tier_id] = [(given[i] if i < len(given) and given[i] else buyer_name) for i in range(item.quantity)]
-        emails[item.tier_id] = [
-            (item.emails[i].lower() if i < len(item.emails) and item.emails[i] else None) for i in range(item.quantity)
-        ]
+        lines[key] = {
+            'quantity': item.quantity,
+            'names': [(given[i] if i < len(given) and given[i] else buyer_name) for i in range(item.quantity)],
+            'emails': [
+                (item.emails[i].lower() if i < len(item.emails) and item.emails[i] else None)
+                for i in range(item.quantity)
+            ],
+        }
+
+    per_tier: dict[int, int] = {}
+    for (tier_id, _), line in lines.items():
+        per_tier[tier_id] = per_tier.get(tier_id, 0) + line['quantity']
 
     # Lock these tiers until we commit. A second buyer going for the same tiers
     # waits here, then sees this order's hold, so the last ticket can't sell twice.
@@ -97,17 +112,24 @@ def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
         t.id: t
         for t in db.scalars(
             select(TicketType)
-            .where(TicketType.id.in_(sorted(wanted)), TicketType.event_id == event.id)
+            .where(TicketType.id.in_(sorted(per_tier)), TicketType.event_id == event.id)
             .order_by(TicketType.id)
             .with_for_update()
         )
     }
     taken = taken_counts(db, list(tiers))
 
-    for tier_id, qty in wanted.items():
+    for (tier_id, gender) in lines:
         tier = tiers.get(tier_id)
         if not tier or not tier.active:
             raise HTTPException(400, 'That ticket type is not available')
+        if tier.gendered and gender is None:
+            raise HTTPException(400, f'Choose Ladies or Men for {tier.name}')
+        if not tier.gendered and gender is not None:
+            raise HTTPException(400, f'{tier.name} is not priced by gender')
+
+    for tier_id, qty in per_tier.items():
+        tier = tiers[tier_id]
         left = remaining(tier, taken[tier_id])
         status = tier_status(tier, left, now)
         if status == 'not_yet':
@@ -124,7 +146,7 @@ def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
                 409, f'{tier.name} is sold out' if left == 0 else f'Not enough {tier.name} tickets left'
             )
 
-    subtotal = sum(tiers[tid].price_cents * qty for tid, qty in wanted.items())
+    subtotal = sum(tiers[tid].price_for(g) * line['quantity'] for (tid, g), line in lines.items())
     if subtotal == 0:
         raise HTTPException(400, 'Free tickets are not supported yet')
     fee = service_fee_cents(subtotal)
@@ -139,11 +161,14 @@ def start_checkout(body: CheckoutIn, db: Session = Depends(get_db)):
         expires_at=now + timedelta(minutes=HOLD_MINUTES),
         items=[
             OrderItem(
-                ticket_type_id=tid, quantity=qty, unit_price_cents=tiers[tid].price_cents,
-                holder_names=names[tid],
-                holder_emails=emails[tid],
+                ticket_type_id=tid,
+                gender=g,
+                quantity=line['quantity'],
+                unit_price_cents=tiers[tid].price_for(g),
+                holder_names=line['names'],
+                holder_emails=line['emails'],
             )
-            for tid, qty in wanted.items()
+            for (tid, g), line in lines.items()
         ],
     )
     db.add(order)

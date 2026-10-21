@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.auth import require_admin
 from app.db import get_db
 from app.inventory import taken_counts
-from app.models import Event, Order, OrderItem, OrderStatus, Staff, Ticket, TicketStatus, TicketType
+from app.models import GENDER_LABEL, Event, Gender, Order, OrderItem, OrderStatus, Staff, Ticket, TicketStatus, TicketType
 from app.schemas import (
     AdminEventListItem,
     AdminEventOut,
@@ -35,9 +35,24 @@ def _event(db: Session, slug: str) -> Event:
 
 # What each valid ticket was sold for: the price on its order line
 _ticket_price = (
-    select(Ticket.id.label('ticket_id'), Ticket.ticket_type_id, Ticket.checked_in_at, Order.paid_at, OrderItem.unit_price_cents)
+    select(
+        Ticket.id.label('ticket_id'),
+        Ticket.ticket_type_id,
+        Ticket.gender,
+        Ticket.checked_in_at,
+        Order.paid_at,
+        OrderItem.unit_price_cents,
+    )
     .join(Order, Ticket.order_id == Order.id)
-    .join(OrderItem, and_(OrderItem.order_id == Ticket.order_id, OrderItem.ticket_type_id == Ticket.ticket_type_id))
+    .join(
+        OrderItem,
+        and_(
+            OrderItem.order_id == Ticket.order_id,
+            OrderItem.ticket_type_id == Ticket.ticket_type_id,
+            # A tier can have a Ladies line and a Men line in one order: match the right one
+            OrderItem.gender.is_not_distinct_from(Ticket.gender),
+        ),
+    )
     .where(Ticket.status == TicketStatus.valid)
 )
 
@@ -53,9 +68,15 @@ def _tier_stats(db: Session, event: Event) -> dict[int, dict]:
             func.coalesce(func.sum(sold.c.unit_price_cents), 0),
         ).group_by(sold.c.ticket_type_id)
     ).all()
-    stats = {i: {'sold': 0, 'checked_in': 0, 'revenue_cents': 0} for i in ids}
+    stats = {i: {'sold': 0, 'checked_in': 0, 'revenue_cents': 0, 'sold_ladies': 0, 'sold_men': 0} for i in ids}
     for tier_id, n, checked, revenue in rows:
-        stats[tier_id] = {'sold': n, 'checked_in': checked, 'revenue_cents': int(revenue)}
+        stats[tier_id].update(sold=n, checked_in=checked, revenue_cents=int(revenue))
+    for tier_id, gender, n in db.execute(
+        select(sold.c.ticket_type_id, sold.c.gender, func.count())
+        .where(sold.c.gender.is_not(None))
+        .group_by(sold.c.ticket_type_id, sold.c.gender)
+    ).all():
+        stats[tier_id][f'sold_{Gender(gender).value}'] = n
     # Held = currently in someone's checkout (taken counts paid + active holds)
     taken = taken_counts(db, ids)
     paid_qty = dict(
@@ -123,6 +144,9 @@ def event_summary(slug: str, db: Session = Depends(get_db)):
             sales_start=t.sales_start,
             sales_end=t.sales_end,
             active=t.active,
+            gendered=t.gendered,
+            price_ladies_cents=t.price_ladies_cents,
+            price_men_cents=t.price_men_cents,
             **stats[t.id],
         )
         for t in event.ticket_types
@@ -165,6 +189,7 @@ def _attendees(db: Session, event: Event) -> list[AttendeeOut]:
             holder_name=t.holder_name,
             holder_email=t.holder_email,
             tier=t.ticket_type.name,
+            gender=t.gender.value if t.gender else None,
             status=t.status.value,
             checked_in_at=t.checked_in_at,
             checked_in_by=t.checked_in_by.name if t.checked_in_by else None,
@@ -187,10 +212,10 @@ def attendees_csv(slug: str, db: Session = Depends(get_db)):
     event = _event(db, slug)
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow(['Name', 'Tier', 'Status', 'Checked in', 'Checked in by', 'Ticket email', 'Buyer', 'Buyer email', 'Paid', 'Ticket code'])
+    w.writerow(['Name', 'Tier', 'Gender', 'Status', 'Checked in', 'Checked in by', 'Ticket email', 'Buyer', 'Buyer email', 'Paid', 'Ticket code'])
     for a in _attendees(db, event):
         w.writerow([
-            a.holder_name, a.tier, a.status,
+            a.holder_name, a.tier, GENDER_LABEL[Gender(a.gender)] if a.gender else '', a.status,
             a.checked_in_at.isoformat() if a.checked_in_at else '', a.checked_in_by or '',
             a.holder_email or '', a.buyer_name, a.buyer_email,
             a.paid_at.isoformat() if a.paid_at else '', a.code,
@@ -242,9 +267,15 @@ def update_event(slug: str, body: EventPatch, db: Session = Depends(get_db)):
     return event_summary(event.slug, db)
 
 
+def _check_gender_prices(gendered: bool, ladies: int | None, men: int | None) -> None:
+    if gendered and (ladies is None or men is None):
+        raise HTTPException(400, 'Set both a Ladies price and a Men price')
+
+
 @router.post('/events/{slug}/tiers', response_model=AdminEventOut)
 def add_tier(slug: str, body: TierIn, db: Session = Depends(get_db)):
     event = _event(db, slug)
+    _check_gender_prices(body.gendered, body.price_ladies_cents, body.price_men_cents)
     db.add(TicketType(event=event, sort_order=len(event.ticket_types), **body.model_dump()))
     db.commit()
     return event_summary(slug, db)
@@ -261,9 +292,10 @@ def update_tier(tier_id: int, body: TierPatch, db: Session = Depends(get_db)):
         if changes['quantity'] < taken:
             raise HTTPException(400, f"{taken} are already sold or held; quantity can't go below that")
     for field, value in changes.items():
-        if field in ('name', 'price_cents', 'quantity', 'max_per_order', 'active') and value is None:
+        if field in ('name', 'price_cents', 'quantity', 'max_per_order', 'active', 'gendered') and value is None:
             continue
         setattr(tier, field, value)
+    _check_gender_prices(tier.gendered, tier.price_ladies_cents, tier.price_men_cents)
     db.commit()
     return event_summary(tier.event.slug, db)
 

@@ -434,3 +434,24 @@
 .settings-row .dash-note {
   margin: 0.3rem 0 0;
 }
+
+/* Tier editor: Ladies / Men prices side by side in the price column */
+.gender-prices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.gender-toggle {
+  grid-column: 1 / -1;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-size: 0.8rem !important;
+}
+
+.gender-toggle input {
+  width: auto !important;
+}

@@ -29,6 +29,7 @@ def _out(t: Ticket) -> CheckinTicket:
         code=t.code,
         holder_name=t.holder_name,
         tier=t.ticket_type.name,
+        gender=t.gender.value if t.gender else None,
         status=t.status.value,
         checked_in_at=t.checked_in_at,
         checked_in_by=t.checked_in_by.name if t.checked_in_by else None,

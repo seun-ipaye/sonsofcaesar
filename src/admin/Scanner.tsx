@@ -3,7 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, timeOnly, type CheckinResult, type CheckinTicket, type StaffEvent } from '../api'
 import './Scanner.css'
 
-const RESULT_MS = 2500 // how long the green/red screen stays up
+const RESULT_MS = 2500 // how long the green screen stays up
+const GENDER_RESULT_MS = 4000 // pink/blue stay a bit longer so the bouncer can check the person
+const GENDER_WORD = { ladies: 'Ladies', men: 'Men' } as const
 const SAME_CODE_COOLDOWN_MS = 4000 // ignore the same QR while it's still in view
 
 type Shown = CheckinResult & { code: string; error?: string }
@@ -164,7 +166,7 @@ function ResultScreen({
   // Green screens close themselves so the line keeps moving; red ones wait for a tap
   useEffect(() => {
     if (shown.result !== 'ok') return
-    const timer = setTimeout(onClose, RESULT_MS)
+    const timer = setTimeout(onClose, shown.ticket?.gender ? GENDER_RESULT_MS : RESULT_MS)
     return () => clearTimeout(timer)
   }, [shown, onClose])
 
@@ -180,6 +182,10 @@ function ResultScreen({
   }
 
   const ok = shown.result === 'ok'
+  const gender = ok ? t?.gender : null
+  // Pink = ladies, blue = men, green = no gender on that tier, red = denied.
+  // The word is always shown too: colours are hard to tell apart in the dark.
+  const colour = !ok ? 'bad' : gender === 'ladies' ? 'ladies' : gender === 'men' ? 'men' : 'good'
   const title = {
     ok: 'Let them in',
     already: 'Already checked in',
@@ -200,17 +206,20 @@ function ResultScreen({
   }
 
   return (
-    <div className={`result ${ok ? 'good' : 'bad'}`} onClick={onClose} role="alert">
+    <div className={`result ${colour}`} onClick={onClose} role="alert">
       <div className="result-icon" aria-hidden="true">
         {ok ? '✓' : '✕'}
       </div>
+      {gender && <div className="result-gender">{GENDER_WORD[gender]}</div>}
       <div className="result-title">{title}</div>
       {t && <div className="result-name">{t.holder_name}</div>}
       {t && <div className="result-tier">{t.tier}</div>}
       {detail && <div className="result-detail">{detail}</div>}
       {ok && (
+        // For Ladies/Men tickets this is how the bouncer refuses a mismatch: it undoes
+        // the check-in so the ticket isn't used up
         <button className="result-undo" onClick={undo}>
-          undo
+          {gender ? "doesn't match" : 'undo'}
         </button>
       )}
       {undoMsg && <div className="result-detail">{undoMsg}</div>}
@@ -259,7 +268,8 @@ function Lookup({ eventSlug, onCheckIn }: { eventSlug: string; onCheckIn: (code:
               <div>
                 <div className="lookup-name">{t.holder_name}</div>
                 <div className="lookup-meta">
-                  {t.tier} · …{t.code.slice(-4)} · {t.buyer_email_hint}
+                  {t.tier}
+                  {t.gender ? ` · ${GENDER_WORD[t.gender]}` : ''} · …{t.code.slice(-4)} · {t.buyer_email_hint}
                 </div>
                 {inAlready && t.checked_in_at && (
                   <div className="lookup-meta">

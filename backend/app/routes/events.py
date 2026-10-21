@@ -26,6 +26,12 @@ def tier_status(tier: TicketType, left: int, now: datetime) -> TierStatus:
     return 'on_sale'
 
 
+def lowest_prices(t: TicketType) -> list[int]:
+    if t.gendered:
+        return [p for p in (t.price_ladies_cents, t.price_men_cents) if p is not None] or [t.price_cents]
+    return [t.price_cents]
+
+
 def event_out(db: Session, event: Event) -> EventOut:
     now = datetime.now(UTC)
     tiers = [t for t in event.ticket_types if t.active]
@@ -45,12 +51,15 @@ def event_out(db: Session, event: Event) -> EventOut:
                 name=t.name,
                 description=t.description,
                 price_cents=t.price_cents,
-                fee_for_one_cents=service_fee_cents(t.price_cents),
+                fee_for_one_cents=service_fee_cents(min(lowest_prices(t))),
                 max_per_order=t.max_per_order,
                 buyable=min(remaining(t, taken[t.id]), t.max_per_order),
                 status=tier_status(t, remaining(t, taken[t.id]), now),
                 sales_start=t.sales_start,
                 sales_end=t.sales_end,
+                gendered=t.gendered,
+                price_ladies_cents=t.price_ladies_cents if t.gendered else None,
+                price_men_cents=t.price_men_cents if t.gendered else None,
             )
             for t in tiers
         ],
@@ -78,7 +87,13 @@ def list_events(db: Session = Depends(get_db)):
         status: TierStatus = next(
             (s for s in ('on_sale', 'not_yet', 'sold_out', 'ended') if s in statuses), 'ended'
         )
-        prices = [t.price_cents for t in out.tiers if t.status in ('on_sale', 'not_yet')]
+        prices = [
+            p
+            for t in out.tiers
+            if t.status in ('on_sale', 'not_yet')
+            for p in ([t.price_ladies_cents, t.price_men_cents] if t.gendered else [t.price_cents])
+            if p is not None
+        ]
         cards.append(
             EventCard(
                 slug=event.slug,

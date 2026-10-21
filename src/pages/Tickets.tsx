@@ -111,16 +111,36 @@ function NothingOnSale() {
   );
 }
 
+type Gender = "ladies" | "men";
+const GENDER_LABEL: Record<Gender, string> = { ladies: "Ladies", men: "Men" };
+
+// What can be picked: one line per tier, or a Ladies line and a Men line for
+// tiers priced by gender. Quantities, names and emails are all kept per line.
+type Line = { key: string; tier: Tier; gender: Gender | null; price: number };
+
+function linesFor(t: Tier): Line[] {
+  if (t.gendered) {
+    return (["ladies", "men"] as Gender[]).map((g) => ({
+      key: `${t.id}:${g}`,
+      tier: t,
+      gender: g,
+      price: (g === "ladies" ? t.price_ladies_cents : t.price_men_cents) ?? 0,
+    }));
+  }
+  return [{ key: `${t.id}`, tier: t, gender: null, price: t.price_cents }];
+}
+
 function EventTickets({ slug }: { slug: string }) {
   const [params] = useSearchParams();
   const [event, setEvent] = useState<SaleEvent | null>(null);
   const [loadError, setLoadError] = useState("");
-  const [qty, setQty] = useState<Record<number, number>>({});
+  // Quantity per line key ("12" or "12:ladies")
+  const [qty, setQty] = useState<Record<string, number>>({});
   const [name, setName] = useState("");
-  // Names on tickets, per tier: holderNames[tierId][i]. Ticket 1 overall defaults to the buyer.
-  const [holderNames, setHolderNames] = useState<Record<number, string[]>>({});
+  // Names on tickets, per line: holderNames[lineKey][i]. Ticket 1 overall defaults to the buyer.
+  const [holderNames, setHolderNames] = useState<Record<string, string[]>>({});
   // Optional "send it to them too" email per ticket, same shape as holderNames
-  const [holderEmails, setHolderEmails] = useState<Record<number, string[]>>(
+  const [holderEmails, setHolderEmails] = useState<Record<string, string[]>>(
     {},
   );
   const [openSends, setOpenSends] = useState<Set<string>>(new Set());
@@ -132,15 +152,19 @@ function EventTickets({ slug }: { slug: string }) {
     return api<SaleEvent>(`/events/${slug}`)
       .then((e) => {
         setEvent(e);
-        // Keep chosen quantities within what's still available
-        setQty((q) =>
-          Object.fromEntries(
-            e.tiers.map((t) => [
-              t.id,
-              t.status === "on_sale" ? Math.min(q[t.id] ?? 0, buyable(t)) : 0,
-            ]),
-          ),
-        );
+        // Keep chosen quantities within what's still available (per tier, across its lines)
+        setQty((q) => {
+          const next: Record<string, number> = {};
+          for (const t of e.tiers) {
+            let room = t.status === "on_sale" ? buyable(t) : 0;
+            for (const line of linesFor(t)) {
+              const n = Math.min(q[line.key] ?? 0, room);
+              next[line.key] = n;
+              room -= n;
+            }
+          }
+          return next;
+        });
       })
       .catch((e) =>
         setLoadError(
@@ -161,24 +185,21 @@ function EventTickets({ slug }: { slug: string }) {
     release.then(load);
   }, [cancelledOrder, load]);
 
-  const subtotal = useMemo(
-    () =>
-      event
-        ? event.tiers.reduce(
-            (sum, t) => sum + t.price_cents * (qty[t.id] ?? 0),
-            0,
-          )
-        : 0,
-    [event, qty],
+  const allLines = useMemo(() => (event?.tiers ?? []).flatMap(linesFor), [event]);
+  const subtotal = allLines.reduce(
+    (sum, line) => sum + line.price * (qty[line.key] ?? 0),
+    0,
   );
+  const tierCount = (t: Tier) =>
+    linesFor(t).reduce((n, line) => n + (qty[line.key] ?? 0), 0);
   const fee = serviceFeeCents(subtotal);
   const count = Object.values(qty).reduce((a, b) => a + b, 0);
 
   // One slot per ticket being bought, in tier order. The very first one may be
   // left blank: it's the buyer's own ticket.
-  const ticketSlots = (event?.tiers ?? []).flatMap((tier) =>
-    Array.from({ length: qty[tier.id] ?? 0 }, (_, index) => ({
-      tier,
+  const ticketSlots = allLines.flatMap((line) =>
+    Array.from({ length: qty[line.key] ?? 0 }, (_, index) => ({
+      line,
       index,
       first: false,
     })),
@@ -187,11 +208,11 @@ function EventTickets({ slug }: { slug: string }) {
 
   const setIn =
     (setter: typeof setHolderNames) =>
-    (tierId: number, index: number, value: string) =>
+    (lineKey: string, index: number, value: string) =>
       setter((h) => {
-        const list = [...(h[tierId] ?? [])];
+        const list = [...(h[lineKey] ?? [])];
         list[index] = value;
-        return { ...h, [tierId]: list };
+        return { ...h, [lineKey]: list };
       });
   const setHolder = setIn(setHolderNames);
   const setHolderEmail = setIn(setHolderEmails);
@@ -204,11 +225,16 @@ function EventTickets({ slug }: { slug: string }) {
       return next;
     });
 
-  const change = (t: Tier, delta: number) => {
+  // Ladies and Men share the tier's limit: adding one is blocked once the tier is full
+  const change = (line: Line, delta: number) => {
     setError("");
     setQty((q) => {
-      const next = Math.max(0, Math.min((q[t.id] ?? 0) + delta, buyable(t)));
-      return { ...q, [t.id]: next };
+      const others = linesFor(line.tier)
+        .filter((l) => l.key !== line.key)
+        .reduce((n, l) => n + (q[l.key] ?? 0), 0);
+      const max = Math.max(buyable(line.tier) - others, 0);
+      const next = Math.max(0, Math.min((q[line.key] ?? 0) + delta, max));
+      return { ...q, [line.key]: next };
     });
   };
 
@@ -222,22 +248,28 @@ function EventTickets({ slug }: { slug: string }) {
         method: "POST",
         body: JSON.stringify({
           event_slug: event.slug,
-          items: Object.entries(qty)
-            .filter(([, n]) => n > 0)
-            .map(([tier_id, quantity]) => ({
-              tier_id: Number(tier_id),
-              quantity,
-              // Blank (never typed) names are sent as "", which means "use the buyer's name"
-              names: Array.from(
-                { length: quantity },
-                (_, i) => holderNames[Number(tier_id)]?.[i] ?? "",
-              ),
-              // Only send emails the buyer actually opened the field for and filled in
-              emails: Array.from({ length: quantity }, (_, i) => {
-                const value = holderEmails[Number(tier_id)]?.[i]?.trim();
-                return openSends.has(`${tier_id}-${i}`) && value ? value : null;
-              }),
-            })),
+          items: allLines
+            .filter((line) => (qty[line.key] ?? 0) > 0)
+            .map((line) => {
+              const quantity = qty[line.key];
+              return {
+                tier_id: line.tier.id,
+                ...(line.gender ? { gender: line.gender } : {}),
+                quantity,
+                // Blank (never typed) names are sent as "", which means "use the buyer's name"
+                names: Array.from(
+                  { length: quantity },
+                  (_, i) => holderNames[line.key]?.[i] ?? "",
+                ),
+                // Only send emails the buyer actually opened the field for and filled in
+                emails: Array.from({ length: quantity }, (_, i) => {
+                  const value = holderEmails[line.key]?.[i]?.trim();
+                  return openSends.has(`${line.key}-${i}`) && value
+                    ? value
+                    : null;
+                }),
+              };
+            }),
           name: name.trim(),
           email: email.trim(),
         }),
@@ -315,25 +347,18 @@ function EventTickets({ slug }: { slug: string }) {
         <form className="tickets-form" onSubmit={buy}>
           <ul className="tiers">
             {event.tiers.map((t) => {
-              const n = qty[t.id] ?? 0;
               const available = t.status === "on_sale";
-              return (
-                <li
-                  key={t.id}
-                  className={`tier ${available ? "" : "unavailable"}`}
-                >
-                  <div className="tier-info">
-                    <div className="tier-name">{t.name}</div>
-                    {t.description && (
-                      <div className="tier-desc">{t.description}</div>
-                    )}
-                    <div className="tier-note">{tierNote(t)}</div>
-                  </div>
-                  <div className="tier-price">{money(t.price_cents)}</div>
-                  <div className="stepper" aria-label={`${t.name} quantity`}>
+              const full = tierCount(t) >= buyable(t);
+              const stepper = (line: Line) => {
+                const n = qty[line.key] ?? 0;
+                const label = line.gender
+                  ? `${t.name} ${GENDER_LABEL[line.gender]}`
+                  : t.name;
+                return (
+                  <div className="stepper" aria-label={`${label} quantity`}>
                     <button
                       type="button"
-                      onClick={() => change(t, -1)}
+                      onClick={() => change(line, -1)}
                       disabled={!available || n === 0}
                       aria-label="Fewer"
                     >
@@ -342,13 +367,46 @@ function EventTickets({ slug }: { slug: string }) {
                     <span>{n}</span>
                     <button
                       type="button"
-                      onClick={() => change(t, 1)}
-                      disabled={!available || n >= buyable(t)}
+                      onClick={() => change(line, 1)}
+                      disabled={!available || full}
                       aria-label="More"
                     >
                       +
                     </button>
                   </div>
+                );
+              };
+              return (
+                <li
+                  key={t.id}
+                  className={`tier ${t.gendered ? "gendered" : ""} ${available ? "" : "unavailable"}`}
+                >
+                  <div className="tier-info">
+                    <div className="tier-name">{t.name}</div>
+                    {t.description && (
+                      <div className="tier-desc">{t.description}</div>
+                    )}
+                    <div className="tier-note">{tierNote(t)}</div>
+                  </div>
+                  {t.gendered ? (
+                    // One row, two pickers: Ladies and Men share this tier's tickets
+                    <div className="gender-lines">
+                      {linesFor(t).map((line) => (
+                        <div className="gender-line" key={line.key}>
+                          <span className="gender-name">
+                            {GENDER_LABEL[line.gender!]}
+                          </span>
+                          <span className="tier-price">{money(line.price)}</span>
+                          {stepper(line)}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="tier-price">{money(t.price_cents)}</div>
+                      {stepper(linesFor(t)[0])}
+                    </>
+                  )}
                 </li>
               );
             })}
@@ -389,19 +447,22 @@ function EventTickets({ slug }: { slug: string }) {
 
               <fieldset className="holders">
                 <legend>Names on tickets</legend>
-                {ticketSlots.map(({ tier, index, first }) => {
-                  const key = `${tier.id}-${index}`;
+                {ticketSlots.map(({ line, index, first }) => {
+                  const key = `${line.key}-${index}`;
+                  const label = line.gender
+                    ? `${line.tier.name} · ${GENDER_LABEL[line.gender]}`
+                    : line.tier.name;
                   const sending = openSends.has(key);
                   return (
                     <div className="holder" key={key}>
                       <label>
                         <span>
-                          {tier.name} · ticket {index + 1}
+                          {label} · ticket {index + 1}
                         </span>
                         <input
-                          value={holderNames[tier.id]?.[index] ?? ""}
+                          value={holderNames[line.key]?.[index] ?? ""}
                           onChange={(e) =>
-                            setHolder(tier.id, index, e.target.value)
+                            setHolder(line.key, index, e.target.value)
                           }
                           placeholder={
                             first ? name || "Your name" : "Full name"
@@ -425,12 +486,12 @@ function EventTickets({ slug }: { slug: string }) {
                             <input
                               type="email"
                               className="send-email"
-                              value={holderEmails[tier.id]?.[index] ?? ""}
+                              value={holderEmails[line.key]?.[index] ?? ""}
                               onChange={(e) =>
-                                setHolderEmail(tier.id, index, e.target.value)
+                                setHolderEmail(line.key, index, e.target.value)
                               }
                               placeholder="Their email"
-                              aria-label={`Email for ${tier.name} ticket ${index + 1}`}
+                              aria-label={`Email for ${label} ticket ${index + 1}`}
                               autoComplete="off"
                               required
                             />

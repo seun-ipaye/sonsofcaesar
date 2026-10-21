@@ -420,3 +420,45 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
+
+/* ---- tiers priced by gender: Ladies and Men pickers inside one row ---- */
+.tier.gendered {
+  grid-template-columns: 1fr auto;
+  align-items: start;
+}
+
+.gender-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.gender-line {
+  display: grid;
+  grid-template-columns: 4.5rem auto auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.gender-name {
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+@media (max-width: 768px) {
+  .tier.gendered {
+    grid-template-columns: 1fr;
+    grid-template-areas: none;
+    gap: 0.8rem;
+  }
+
+  .tier.gendered .tier-info {
+    grid-area: auto;
+  }
+
+  .gender-line {
+    grid-template-columns: 1fr auto auto;
+  }
+}

@@ -21,6 +21,10 @@ export type Tier = {
   status: TierStatus
   sales_start: string | null
   sales_end: string | null
+  // Priced by gender: Ladies and Men share this tier's tickets
+  gendered?: boolean
+  price_ladies_cents?: number | null
+  price_men_cents?: number | null
 }
 
 export type SaleEvent = {
@@ -58,6 +62,7 @@ export type Ticket = {
   code: string
   tier: string
   holder_name: string
+  gender?: 'ladies' | 'men' | null
   status: 'valid' | 'void'
   checked_in_at: string | null
 }
@@ -125,6 +130,7 @@ export type CheckinTicket = {
   code: string
   holder_name: string
   tier: string
+  gender?: 'ladies' | 'men' | null
   status: 'valid' | 'void'
   checked_in_at: string | null
   checked_in_by: string | null
@@ -158,6 +164,11 @@ export type AdminTier = {
   held: number
   checked_in: number
   revenue_cents: number
+  gendered: boolean
+  price_ladies_cents: number | null
+  price_men_cents: number | null
+  sold_ladies: number
+  sold_men: number
 }
 
 export type AdminEvent = {
@@ -198,6 +209,7 @@ export type Attendee = {
   holder_name: string
   holder_email: string | null
   tier: string
+  gender?: 'ladies' | 'men' | null
   status: 'valid' | 'void'
   checked_in_at: string | null
   checked_in_by: string | null

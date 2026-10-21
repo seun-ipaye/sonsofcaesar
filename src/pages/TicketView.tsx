@@ -39,7 +39,10 @@ export function TicketCard({ ticket }: { ticket: TicketPage | (Omit<TicketPage, 
         <img src={qrUrl(ticket.code)} alt="Ticket QR code" />
         {state !== 'valid' && <span className="ticket-stamp">{state === 'void' ? 'refunded' : 'used'}</span>}
       </div>
-      <div className="ticket-tier">{ticket.tier}</div>
+      <div className="ticket-tier">
+        {ticket.tier}
+        {ticket.gender ? ` · ${ticket.gender === 'ladies' ? 'Ladies' : 'Men'}` : ''}
+      </div>
       <div className="ticket-holder">
         {ticket.holder_name} · …{ticket.code.slice(-4)}
       </div>

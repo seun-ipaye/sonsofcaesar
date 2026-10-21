@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import Event, Order, OrderStatus, Ticket, TicketStatus, public_venue
+from app.models import GENDER_LABEL, Event, Order, OrderStatus, Ticket, TicketStatus, public_venue
 from app.qr import qr_png
 
 log = logging.getLogger(__name__)
@@ -37,6 +37,11 @@ def mask_email(email: str) -> str:
     """se•••@gmail.com: enough to recognise your own address, not enough to read it."""
     local, _, domain = email.partition('@')
     return f'{local[:2]}•••@{domain}'
+
+
+def ticket_label(t: Ticket) -> str:
+    """e.g. "GA · Ladies" for gender-priced tickets, else just the tier."""
+    return f'{t.ticket_type.name} · {GENDER_LABEL[t.gender]}' if t.gender else t.ticket_type.name
 
 
 def maps_url(address: str) -> str:
@@ -66,7 +71,7 @@ def _render(order: Order, tickets: list[Ticket], kicker: str, button_url: str, b
           <img src="{settings.api_url}/tickets/{t.code}/qr.png" width="220" height="220" alt="QR code"
                style="display:block;margin:0 auto 14px;border:8px solid #fff;background:#fff">
           <div style="font-size:16px;color:#fff">{esc(t.holder_name)}</div>
-          <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#ccc;margin-top:6px">{esc(t.ticket_type.name)}</div>
+          <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#ccc;margin-top:6px">{esc(ticket_label(t))}</div>
           <div style="font-size:12px;color:#888;margin-top:4px">...{t.code[-4:]}</div>
         </td></tr>'''
         for t in tickets

@@ -85,7 +85,7 @@ def test_attendees_csv_and_void(data):
 
     csv = boss.get('/admin/events/vol-iii/attendees.csv')
     assert csv.headers['content-type'].startswith('text/csv')
-    assert csv.text.splitlines()[0].startswith('Name,Tier,Status') and len(csv.text.splitlines()) == 8
+    assert csv.text.splitlines()[0].startswith('Name,Tier,Gender,Status') and len(csv.text.splitlines()) == 8
 
     code = next(p['code'] for p in people if p['status'] == 'valid')
     assert boss.post(f'/admin/tickets/{code}/void').json()['status'] == 'void'

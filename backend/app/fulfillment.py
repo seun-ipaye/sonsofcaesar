@@ -56,6 +56,7 @@ def fulfill_order(db: Session, order_id: str, payment_intent_id: str | None, amo
                     ticket_type_id=item.ticket_type_id,
                     holder_name=names[i] if i < len(names) and names[i] else order.buyer_name,
                     holder_email=emails[i] if i < len(emails) else None,
+                    gender=item.gender,
                 )
             )
     db.commit()

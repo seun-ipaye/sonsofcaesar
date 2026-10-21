@@ -22,6 +22,10 @@ class TierOut(BaseModel):
     status: TierStatus
     sales_start: datetime | None
     sales_end: datetime | None
+    # Priced by gender: one shared pool, a Ladies price and a Men price
+    gendered: bool = False
+    price_ladies_cents: int | None = None
+    price_men_cents: int | None = None
 
 
 class EventOut(BaseModel):
@@ -55,6 +59,8 @@ class EventCard(BaseModel):
 class CheckoutItem(BaseModel):
     tier_id: int
     quantity: int = Field(ge=1, le=20)
+    # Required for tiers priced by gender (one line per gender); must be empty otherwise
+    gender: Literal['ladies', 'men'] | None = None
     # One name per ticket; missing/blank ones fall back to the buyer's name
     names: list[str | None] = Field(default_factory=list, max_length=20)
     # Optional per ticket: also email that ticket to this address (null = don't)
@@ -77,6 +83,7 @@ class TicketOut(BaseModel):
     code: str
     tier: str
     holder_name: str
+    gender: Literal['ladies', 'men'] | None = None  # gender-priced tiers only
     status: str  # valid / void
     checked_in_at: datetime | None
 
@@ -129,6 +136,7 @@ class CheckinTicket(BaseModel):
     code: str
     holder_name: str
     tier: str
+    gender: Literal['ladies', 'men'] | None = None  # gender-priced tiers only
     status: str
     checked_in_at: datetime | None
     checked_in_by: str | None
@@ -171,6 +179,11 @@ class AdminTierOut(BaseModel):
     held: int  # in checkouts happening right now
     checked_in: int
     revenue_cents: int  # ticket price x sold (what you keep)
+    gendered: bool = False
+    price_ladies_cents: int | None = None
+    price_men_cents: int | None = None
+    sold_ladies: int = 0
+    sold_men: int = 0
 
 
 class SalesDay(BaseModel):
@@ -217,6 +230,7 @@ class AttendeeOut(BaseModel):
     holder_name: str
     holder_email: str | None
     tier: str
+    gender: Literal['ladies', 'men'] | None = None  # gender-priced tiers only
     status: str
     checked_in_at: datetime | None
     checked_in_by: str | None
@@ -259,6 +273,9 @@ class TierIn(BaseModel):
     max_per_order: int = Field(default=4, ge=1, le=20)
     sales_start: datetime | None = None
     sales_end: datetime | None = None
+    gendered: bool = False
+    price_ladies_cents: int | None = Field(default=None, ge=0)
+    price_men_cents: int | None = Field(default=None, ge=0)
 
 
 class TierPatch(BaseModel):
@@ -270,3 +287,6 @@ class TierPatch(BaseModel):
     sales_start: datetime | None = None
     sales_end: datetime | None = None
     active: bool | None = None
+    gendered: bool | None = None
+    price_ladies_cents: int | None = Field(default=None, ge=0)
+    price_men_cents: int | None = Field(default=None, ge=0)
