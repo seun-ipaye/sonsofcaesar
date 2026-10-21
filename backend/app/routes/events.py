@@ -32,6 +32,12 @@ def lowest_prices(t: TicketType) -> list[int]:
     return [t.price_cents]
 
 
+def event_combos(db: Session, event: Event):
+    from app.routes.combos import combo_out, listed_combos  # avoid an import cycle
+
+    return [combo_out(db, c) for c in listed_combos(db, event.id)]
+
+
 def event_out(db: Session, event: Event) -> EventOut:
     now = datetime.now(UTC)
     tiers = [t for t in event.ticket_types if t.active]
@@ -45,6 +51,7 @@ def event_out(db: Session, event: Event) -> EventOut:
         starts_at=event.starts_at,
         ends_at=event.ends_at,
         sales_start=event.sales_start,
+        combos=event_combos(db, event),
         tiers=[
             TierOut(
                 id=t.id,

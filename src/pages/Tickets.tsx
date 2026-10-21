@@ -6,11 +6,13 @@ import {
   formatWhen,
   money,
   serviceFeeCents,
+  type Combo,
   type EventCard,
   type SaleEvent,
   type Tier,
 } from "../api";
 import Chevron from "../Chevron";
+import ComboTickets from "./ComboTickets";
 import "./Tickets.css";
 
 const shortDate = (iso: string) =>
@@ -46,6 +48,7 @@ export default function Tickets() {
   const { slug } = useParams();
   const [params] = useSearchParams();
   const [events, setEvents] = useState<EventCard[] | null>(null);
+  const [combos, setCombos] = useState<Combo[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -53,19 +56,26 @@ export default function Tickets() {
     api<EventCard[]>("/events")
       .then(setEvents)
       .catch((e) => setError(e.message));
+    // Combos are optional extras: if they fail to load, the events still show
+    api<Combo[]>("/combos")
+      .then(setCombos)
+      .catch(() => setCombos([]));
   }, [slug]);
 
-  if (slug) return <EventTickets key={slug} slug={slug} />;
+  if (slug) return <SlugPage key={slug} slug={slug} />;
   if (error) return <p className="tickets-status">{error}</p>;
   if (!events) return <p className="tickets-status">Loading…</p>;
   if (events.length === 0) return <NothingOnSale />;
-  // One event: show it right here (and keep ?cancelled working)
-  if (events.length === 1) return <EventTickets slug={events[0].slug} />;
+  // One event and no combos: show it right here (and keep ?cancelled working)
+  if (events.length === 1 && combos.length === 0)
+    return <EventTickets slug={events[0].slug} />;
 
   return (
     <section className="event-choice">
       {params.get("cancelled") && (
-        <p className="tickets-banner">Checkout cancelled. You weren't charged.</p>
+        <p className="tickets-banner">
+          Checkout cancelled. You weren't charged.
+        </p>
       )}
       <p className="tickets-kicker">tickets</p>
       <div className="event-cards">
@@ -73,7 +83,11 @@ export default function Tickets() {
           <Link key={e.slug} to={`/tickets/${e.slug}`} className="event-card">
             <div className="event-card-flyer">
               {e.poster_url ? (
-                <img src={e.poster_url} alt={`${e.name} flyer`} loading="lazy" />
+                <img
+                  src={e.poster_url}
+                  alt={`${e.name} flyer`}
+                  loading="lazy"
+                />
               ) : (
                 <span>{e.name}</span>
               )}
@@ -94,9 +108,58 @@ export default function Tickets() {
             </div>
           </Link>
         ))}
+        {combos.map((c) => (
+          <Link key={c.slug} to={`/tickets/${c.slug}`} className="event-card">
+            <ComboFlyer combo={c} />
+            <div className="event-card-info">
+              <h2>{c.name}</h2>
+              <p>{c.parts.map((p) => p.event_name).join(" + ")}</p>
+              <p>one ticket for each event</p>
+              <p className="event-card-cta">
+                {c.status === "sold_out"
+                  ? "sold out"
+                  : `${money(c.price_cents)} →`}
+              </p>
+            </div>
+          </Link>
+        ))}
       </div>
     </section>
   );
+}
+
+// The combo's own flyer, or its nights' flyers side by side
+function ComboFlyer({ combo }: { combo: Combo }) {
+  const flyers = combo.poster_url
+    ? [combo.poster_url]
+    : combo.parts.map((p) => p.poster_url).filter((u): u is string => !!u);
+  return (
+    <div className={`event-card-flyer combo-card-flyer n${flyers.length}`}>
+      {flyers.length ? (
+        flyers.map((src) => <img key={src} src={src} alt="" loading="lazy" />)
+      ) : (
+        <span>{combo.name}</span>
+      )}
+    </div>
+  );
+}
+
+// /tickets/<link>: an event, or else a combo pass with that link name
+function SlugPage({ slug }: { slug: string }) {
+  const [state, setState] = useState<"event" | "loading" | Combo>("loading");
+  useEffect(() => {
+    api(`/events/${slug}`)
+      .then(() => setState("event"))
+      .catch(
+        () =>
+          api<Combo>(`/combos/${slug}`)
+            .then(setState)
+            .catch(() => setState("event")), // let the event page show "not on sale"
+      );
+  }, [slug]);
+  if (state === "loading") return <p className="tickets-status">Loading…</p>;
+  if (state === "event") return <EventTickets slug={slug} />;
+  return <ComboTickets combo={state} />;
 }
 
 function NothingOnSale() {
@@ -185,7 +248,10 @@ function EventTickets({ slug }: { slug: string }) {
     release.then(load);
   }, [cancelledOrder, load]);
 
-  const allLines = useMemo(() => (event?.tiers ?? []).flatMap(linesFor), [event]);
+  const allLines = useMemo(
+    () => (event?.tiers ?? []).flatMap(linesFor),
+    [event],
+  );
   const subtotal = allLines.reduce(
     (sum, line) => sum + line.price * (qty[line.key] ?? 0),
     0,
@@ -338,11 +404,27 @@ function EventTickets({ slug }: { slug: string }) {
           </div>
         </header>
 
-      {event.sales_start && new Date(event.sales_start) > new Date() && (
-        <p className="tickets-soon-banner">
-          Tickets go on sale <strong>{formatWhen(event.sales_start)}</strong>
-        </p>
-      )}
+        {event.combos?.map((c) => (
+          <Link key={c.slug} to={`/tickets/${c.slug}`} className="combo-promo">
+            <span className="combo-promo-kicker">
+              Going to {c.parts.length === 2 ? "both" : "all of them"}?
+            </span>
+            <span className="combo-promo-main">
+              {c.status === "sold_out"
+                ? `${c.name} is sold out`
+                : `${c.name}, ${money(c.price_cents)}`}
+            </span>
+            <span className="combo-promo-arrow" aria-hidden="true">
+              →
+            </span>
+          </Link>
+        ))}
+
+        {event.sales_start && new Date(event.sales_start) > new Date() && (
+          <p className="tickets-soon-banner">
+            Tickets go on sale <strong>{formatWhen(event.sales_start)}</strong>
+          </p>
+        )}
 
         <form className="tickets-form" onSubmit={buy}>
           <ul className="tiers">
@@ -396,7 +478,9 @@ function EventTickets({ slug }: { slug: string }) {
                           <span className="gender-name">
                             {GENDER_LABEL[line.gender!]}
                           </span>
-                          <span className="tier-price">{money(line.price)}</span>
+                          <span className="tier-price">
+                            {money(line.price)}
+                          </span>
                           {stepper(line)}
                         </div>
                       ))}

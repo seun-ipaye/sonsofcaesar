@@ -38,6 +38,30 @@ export type SaleEvent = {
   sales_start: string | null // tickets can't be bought before this
   currency: string
   tiers: Tier[]
+  combos?: Combo[] // passes that include this event ("Going to both?")
+}
+
+export type ComboPart = {
+  event_slug: string
+  event_name: string
+  starts_at: string
+  venue: string | null
+  poster_url: string | null
+  tier: string
+}
+
+export type Combo = {
+  slug: string
+  name: string
+  description: string | null
+  poster_url: string | null
+  price_cents: number
+  fee_for_one_cents: number
+  max_per_order: number
+  buyable: number
+  status: TierStatus
+  sales_end: string | null
+  parts: ComboPart[]
 }
 
 export type EventCard = {
@@ -76,8 +100,12 @@ export type OrderPage = {
   email_hint: string
   resends_left: number
   total_cents: number
-  event: TicketEvent
+  title?: string
+  is_combo?: boolean
+  event: TicketEvent | null
   tickets: Ticket[]
+  // Tickets grouped by event (one group, or one per night for a combo pass)
+  groups?: { event: TicketEvent; tickets: Ticket[] }[]
 }
 
 export class ApiError extends Error {
@@ -169,6 +197,7 @@ export type AdminTier = {
   price_men_cents: number | null
   sold_ladies: number
   sold_men: number
+  sold_combo: number
 }
 
 export type AdminEvent = {
@@ -217,4 +246,27 @@ export type Attendee = {
   buyer_name: string
   buyer_email: string
   paid_at: string | null
+  combo?: string | null
 }
+
+export type AdminCombo = {
+  id: number
+  slug: string
+  name: string
+  description: string | null
+  poster_url: string | null
+  price_cents: number
+  quantity: number
+  max_per_order: number
+  sales_end: string | null
+  on_sale: boolean
+  tier_ids: number[]
+  parts: ComboPart[]
+  sold: number
+  held: number
+  revenue_cents: number
+  fees_cents: number
+  orders: number
+}
+
+export type TierChoice = { id: number; label: string; event_slug: string }

@@ -14,10 +14,10 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import get_db
 from app.inventory import remaining, taken_counts
-from app.models import GENDER_LABEL, Event, Gender, Order, OrderItem, OrderStatus, TicketType
+from app.models import GENDER_LABEL, Combo, Event, Gender, Order, OrderItem, OrderStatus, TicketType
 from app.pricing import service_fee_cents
 from app.routes.events import tier_status, upcoming_on_sale
-from app.schemas import CheckoutIn, CheckoutOut
+from app.schemas import CheckoutIn, CheckoutOut, ComboCheckoutIn
 
 router = APIRouter(prefix='/checkout', tags=['checkout'])
 
@@ -55,6 +55,10 @@ def create_stripe_session(order: Order, event: Event, tiers: dict[int, TicketTyp
             },
         }
     )
+    return _stripe_session(order, line_items, cancel_path=f'/tickets/{event.slug}')
+
+
+def _stripe_session(order: Order, line_items: list[dict], cancel_path: str) -> stripe.checkout.Session:
     return stripe.checkout.Session.create(
         api_key=settings.stripe_secret_key,
         mode='payment',
@@ -65,8 +69,31 @@ def create_stripe_session(order: Order, event: Event, tiers: dict[int, TicketTyp
         payment_intent_data={'metadata': {'order_id': str(order.id)}},
         expires_at=int((datetime.now(UTC) + timedelta(minutes=STRIPE_SESSION_MINUTES)).timestamp()),
         success_url=f'{settings.site_url}/order/{order.id}',
-        cancel_url=f'{settings.site_url}/tickets/{event.slug}?cancelled={order.id}',
+        cancel_url=f'{settings.site_url}{cancel_path}?cancelled={order.id}',
     )
+
+
+def create_combo_session(order: Order, combo: Combo) -> stripe.checkout.Session:
+    events = ' + '.join(p.ticket_type.event.name for p in sorted(combo.parts, key=lambda p: p.ticket_type.event.starts_at))
+    line_items = [
+        {
+            'quantity': order.combo_quantity,
+            'price_data': {
+                'currency': order.currency,
+                'unit_amount': combo.price_cents,
+                'product_data': {'name': f'{combo.name} · {events}'},
+            },
+        },
+        {
+            'quantity': 1,
+            'price_data': {
+                'currency': order.currency,
+                'unit_amount': order.fee_cents,
+                'product_data': {'name': 'Service fee'},
+            },
+        },
+    ]
+    return _stripe_session(order, line_items, cancel_path=f'/tickets/{combo.slug}')
 
 
 @router.post('', response_model=CheckoutOut)
@@ -201,3 +228,79 @@ def cancel_checkout(order_id: uuid.UUID, db: Session = Depends(get_db)):
     order.status = OrderStatus.expired
     db.commit()
     return {'released': True}
+
+
+@router.post('/combo', response_model=CheckoutOut)
+def start_combo_checkout(body: ComboCheckoutIn, db: Session = Depends(get_db)):
+    """Buy combo passes: each pass holds one ticket from every part tier."""
+    from app.combos import combo_state
+    from app.routes.combos import visible
+
+    now = datetime.now(UTC)
+    if not settings.stripe_is_live and not settings.test_payments_allowed:
+        raise HTTPException(503, 'Ticket sales open soon.')
+
+    combo = db.scalar(select(Combo).where(Combo.slug == body.combo_slug).with_for_update())
+    if not combo or not visible(db, combo):
+        raise HTTPException(404, 'This combo is not on sale')
+    # Lock the part tiers too (same order as regular checkout: by id), so a combo and
+    # a regular ticket can't both take the last spot
+    tier_ids = sorted(p.ticket_type_id for p in combo.parts)
+    db.scalars(select(TicketType).where(TicketType.id.in_(tier_ids)).order_by(TicketType.id).with_for_update()).all()
+
+    status, buyable = combo_state(db, combo, now)
+    if status == 'not_yet':
+        raise HTTPException(400, f'{combo.name} is not on sale yet')
+    if status == 'ended':
+        raise HTTPException(400, f'{combo.name} sales have ended')
+    if body.quantity > combo.max_per_order:
+        raise HTTPException(400, f'Max {combo.max_per_order} {combo.name} per order')
+    if status == 'sold_out' or body.quantity > buyable:
+        raise HTTPException(409, f'{combo.name} is sold out' if status == 'sold_out' else f'Not enough {combo.name} left')
+    if len(body.names) > body.quantity or len(body.emails) > body.quantity:
+        raise HTTPException(400, 'More names than passes')
+
+    buyer_name = body.name.strip()
+    given = [(n or '').strip()[:200] for n in body.names]
+    names = [(given[i] if i < len(given) and given[i] else buyer_name) for i in range(body.quantity)]
+    emails = [(body.emails[i].lower() if i < len(body.emails) and body.emails[i] else None) for i in range(body.quantity)]
+
+    subtotal = combo.price_cents * body.quantity
+    if subtotal == 0:
+        raise HTTPException(400, 'Free tickets are not supported yet')
+    fee = service_fee_cents(subtotal)
+    order = Order(
+        event_id=None,  # spans several events; each ticket has its own
+        combo_id=combo.id,
+        combo_quantity=body.quantity,
+        buyer_name=buyer_name,
+        buyer_email=body.email.lower(),
+        subtotal_cents=subtotal,
+        fee_cents=fee,
+        total_cents=subtotal + fee,
+        expires_at=now + timedelta(minutes=HOLD_MINUTES),
+        # One line per part tier: holds that tier's stock, and becomes that night's
+        # tickets on payment. The price lives on the combo, so these lines are $0.
+        items=[
+            OrderItem(
+                ticket_type_id=part.ticket_type_id,
+                quantity=body.quantity,
+                unit_price_cents=0,
+                holder_names=names,
+                holder_emails=emails,
+            )
+            for part in combo.parts
+        ],
+    )
+    db.add(order)
+    db.flush()
+
+    try:
+        session = create_combo_session(order, combo)
+    except stripe.StripeError:
+        db.rollback()
+        raise HTTPException(502, 'Payment provider error, please try again')
+
+    order.stripe_session_id = session.id
+    db.commit()
+    return CheckoutOut(order_id=str(order.id), checkout_url=session.url)

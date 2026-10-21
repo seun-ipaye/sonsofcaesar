@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router'
-import { api, ApiError, formatWhen, money, type OrderPage } from '../api'
+import { api, ApiError, formatWhen, money, type OrderPage, type TicketEvent } from '../api'
 import { TicketCard } from './TicketView'
 import SecretAddress from './SecretAddress'
 import Chevron from '../Chevron'
@@ -60,28 +60,62 @@ export default function OrderView() {
     return <p className="ticket-message">This checkout expired before payment. Nothing was charged.</p>
   }
 
+  // One group per event: a normal order has one, a combo pass has one per night.
+  // (Falls back to the older single-event shape for the minute after a deploy.)
+  const groups =
+    order.groups && order.groups.length
+      ? order.groups
+      : order.event
+        ? [{ event: order.event, tickets: order.tickets }]
+        : []
+  const single = groups.length === 1
+  const title = order.title ?? groups[0]?.event.name ?? 'Your tickets'
+
   return (
     <section className="order-view">
       <p className="order-kicker">{order.status === 'refunded' ? 'refunded' : "you're in"}</p>
-      <h1>{order.event.name}</h1>
-      <p className="ticket-when">{formatWhen(order.event.starts_at)}</p>
-      {order.event.venue && !order.event.address && <p className="ticket-when">{order.event.venue}</p>}
+      <h1>{title}</h1>
+      {single ? (
+        <EventLines event={groups[0].event} />
+      ) : (
+        <p className="ticket-when">{groups.map((g) => g.event.name).join(' + ')}</p>
+      )}
       <p className="order-note">
         {order.tickets.length} {order.tickets.length === 1 ? 'ticket' : 'tickets'} for {order.buyer_name} ·{' '}
-        {money(order.total_cents)}. We've emailed them to you too. Each QR works once at the door.
+        {money(order.total_cents)}. We've emailed them to you too.{' '}
+        {single ? 'Each QR works once at the door.' : 'Show each QR at its own event. Each works once.'}
       </p>
-      <div className="order-tickets">
-        {order.tickets.map((t) => (
-          <a key={t.code} href={`/t/${t.code}`} className="order-ticket-link">
-            <TicketCard ticket={t} />
-          </a>
-        ))}
-      </div>
 
-      <SecretAddress address={order.event.address} />
+      {groups.map((g) => (
+        <div className="order-group" key={g.event.name + g.event.starts_at}>
+          {!single && (
+            <div className="order-group-head">
+              <h2>{g.event.name}</h2>
+              <EventLines event={g.event} />
+            </div>
+          )}
+          <div className="order-tickets">
+            {g.tickets.map((t) => (
+              <a key={t.code} href={`/t/${t.code}`} className="order-ticket-link">
+                <TicketCard ticket={t} />
+              </a>
+            ))}
+          </div>
+          <SecretAddress address={g.event.address} />
+        </div>
+      ))}
 
       {order.status === 'paid' && <ResendTickets order={order} />}
     </section>
+  )
+}
+
+function EventLines({ event }: { event: TicketEvent }) {
+  return (
+    <>
+      <p className="ticket-when">{formatWhen(event.starts_at)}</p>
+      {event.venue && !event.address && <p className="ticket-when">{event.venue}</p>}
+    </>
   )
 }
 

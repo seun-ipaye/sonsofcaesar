@@ -41,6 +41,7 @@ _ticket_price = (
         Ticket.gender,
         Ticket.checked_in_at,
         Order.paid_at,
+        Order.combo_id,
         OrderItem.unit_price_cents,
     )
     .join(Order, Ticket.order_id == Order.id)
@@ -68,7 +69,10 @@ def _tier_stats(db: Session, event: Event) -> dict[int, dict]:
             func.coalesce(func.sum(sold.c.unit_price_cents), 0),
         ).group_by(sold.c.ticket_type_id)
     ).all()
-    stats = {i: {'sold': 0, 'checked_in': 0, 'revenue_cents': 0, 'sold_ladies': 0, 'sold_men': 0} for i in ids}
+    stats = {
+        i: {'sold': 0, 'checked_in': 0, 'revenue_cents': 0, 'sold_ladies': 0, 'sold_men': 0, 'sold_combo': 0}
+        for i in ids
+    }
     for tier_id, n, checked, revenue in rows:
         stats[tier_id].update(sold=n, checked_in=checked, revenue_cents=int(revenue))
     for tier_id, gender, n in db.execute(
@@ -77,6 +81,12 @@ def _tier_stats(db: Session, event: Event) -> dict[int, dict]:
         .group_by(sold.c.ticket_type_id, sold.c.gender)
     ).all():
         stats[tier_id][f'sold_{Gender(gender).value}'] = n
+    for tier_id, n in db.execute(
+        select(sold.c.ticket_type_id, func.count())
+        .where(sold.c.combo_id.is_not(None))
+        .group_by(sold.c.ticket_type_id)
+    ).all():
+        stats[tier_id]['sold_combo'] = n
     # Held = currently in someone's checkout (taken counts paid + active holds)
     taken = taken_counts(db, ids)
     paid_qty = dict(
@@ -195,6 +205,7 @@ def _attendees(db: Session, event: Event) -> list[AttendeeOut]:
             checked_in_by=t.checked_in_by.name if t.checked_in_by else None,
             order_id=str(t.order_id),
             buyer_name=t.order.buyer_name,
+            combo=t.order.combo.name if t.order.combo else None,
             buyer_email=t.order.buyer_email,
             paid_at=t.order.paid_at,
         )
@@ -245,7 +256,9 @@ def void_ticket(code: str, db: Session = Depends(get_db), restore: bool = Query(
 
 @router.post('/events', response_model=AdminEventOut)
 def create_event(body: EventIn, db: Session = Depends(get_db)):
-    if db.scalar(select(Event).where(Event.slug == body.slug)):
+    from app.models import Combo
+
+    if db.scalar(select(Event).where(Event.slug == body.slug)) or db.scalar(select(Combo).where(Combo.slug == body.slug)):
         raise HTTPException(409, 'That link name is taken')
     db.add(Event(**body.model_dump()))
     db.commit()

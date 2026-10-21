@@ -461,4 +461,83 @@
   .gender-line {
     grid-template-columns: 1fr auto auto;
   }
+
+  /* The phone layout for normal tier rows places .tier-price and .stepper in named
+     areas; inside a Ladies/Men line they must just flow in their own columns */
+  .gender-line .tier-price,
+  .gender-line .stepper {
+    grid-area: auto;
+    justify-self: end;
+  }
+}
+
+/* ---- combo passes ---- */
+/* "Going to both?": a quiet one-line link, not a box */
+.combo-promo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: -1.75rem 0 2rem;
+  color: #fff;
+  opacity: 0.6;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.combo-promo:hover,
+.combo-promo:focus-visible {
+  opacity: 1;
+}
+
+.combo-promo:hover .combo-promo-main,
+.combo-promo:focus-visible .combo-promo-main {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.combo-promo-kicker {
+  letter-spacing: 0.02em;
+}
+
+.combo-promo-arrow {
+  transition: transform 0.2s;
+}
+
+.combo-promo:hover .combo-promo-arrow {
+  transform: translateX(3px);
+}
+
+.combo-parts {
+  list-style: none;
+  padding: 0;
+  margin: -1rem 0 2rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.combo-part-name {
+  color: #fff;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.combo-part-meta {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-top: 0.2rem;
+}
+
+/* Two flyers side by side (page and choice card) */
+.combo-flyers.n2,
+.combo-card-flyer.n2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.combo-card-flyer.n2 img {
+  object-fit: contain;
 }

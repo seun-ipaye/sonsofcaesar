@@ -128,11 +128,57 @@ class TicketType(Base):
         return self.price_cents
 
 
+class Combo(Base):
+    """A pass for several events at one price, e.g. club + house party for $25.
+    Each pass issues one normal ticket per part, so each night's door, stock and
+    counts work exactly as for any other ticket."""
+
+    __tablename__ = 'combos'
+    __table_args__ = (
+        CheckConstraint('price_cents >= 0', name='combo_price_not_negative'),
+        CheckConstraint('quantity >= 0', name='combo_quantity_not_negative'),
+        CheckConstraint('max_per_order >= 1', name='combo_max_per_order_positive'),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(80), unique=True)
+    name: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str | None] = mapped_column(Text)
+    poster_url: Mapped[str | None] = mapped_column(String(500))
+    price_cents: Mapped[int] = mapped_column(Integer)
+    quantity: Mapped[int] = mapped_column(Integer)  # cap on passes
+    max_per_order: Mapped[int] = mapped_column(Integer, default=4)
+    sales_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    on_sale: Mapped[bool] = mapped_column(default=False)  # listed
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    parts: Mapped[list['ComboPart']] = relationship(
+        back_populates='combo', cascade='all, delete-orphan', order_by='ComboPart.id'
+    )
+
+
+class ComboPart(Base):
+    """One tier a combo draws from (one per event)."""
+
+    __tablename__ = 'combo_parts'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    combo_id: Mapped[int] = mapped_column(ForeignKey('combos.id', ondelete='CASCADE'), index=True)
+    ticket_type_id: Mapped[int] = mapped_column(ForeignKey('ticket_types.id'), index=True)
+
+    combo: Mapped[Combo] = relationship(back_populates='parts')
+    ticket_type: Mapped[TicketType] = relationship()
+
+
 class Order(Base):
     __tablename__ = 'orders'
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    event_id: Mapped[int] = mapped_column(ForeignKey('events.id'), index=True)
+    # The event this order is for. Empty for combo orders, which span several events
+    # (their tickets each belong to their own event).
+    event_id: Mapped[int | None] = mapped_column(ForeignKey('events.id'), index=True)
+    combo_id: Mapped[int | None] = mapped_column(ForeignKey('combos.id'), index=True)
+    combo_quantity: Mapped[int | None] = mapped_column(Integer)  # passes bought (combo orders)
     buyer_name: Mapped[str] = mapped_column(String(200))
     buyer_email: Mapped[str] = mapped_column(String(320), index=True)
     status: Mapped[OrderStatus] = mapped_column(_enum(OrderStatus), default=OrderStatus.pending, index=True)
@@ -150,7 +196,8 @@ class Order(Base):
     last_resent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    event: Mapped[Event] = relationship()
+    event: Mapped[Event | None] = relationship()
+    combo: Mapped['Combo | None'] = relationship()
     items: Mapped[list['OrderItem']] = relationship(back_populates='order', cascade='all, delete-orphan')
     tickets: Mapped[list['Ticket']] = relationship(back_populates='order')
 

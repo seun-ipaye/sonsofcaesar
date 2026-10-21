@@ -12,6 +12,7 @@ import Privacy from './pages/Privacy'
 import Admin from './admin/Admin'
 import AdminHome from './admin/AdminHome'
 import Scanner from './admin/Scanner'
+import Combos from './admin/Combos'
 import { EXTERNAL } from './NavButton'
 
 // While tickets live on another site (EXTERNAL in NavButton), /tickets redirects there
@@ -45,6 +46,7 @@ export default function App() {
       <Route path="/admin" element={<Admin />}>
         <Route index element={<AdminHome />} />
         <Route path="scan" element={<Scanner />} />
+        <Route path="combos" element={<Combos />} />
       </Route>
       {/* Unknown addresses go back to the intro */}
       <Route path="*" element={<Navigate to="/" replace />} />

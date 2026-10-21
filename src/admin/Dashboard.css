@@ -455,3 +455,52 @@
 .gender-toggle input {
   width: auto !important;
 }
+
+/* ---- combos ---- */
+.combos-title {
+  flex: 1;
+  margin: 0;
+  font-weight: 400;
+  font-size: 1rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.combo-admin .tiles {
+  margin: 0.5rem 0 0.25rem;
+}
+
+.combo-parts-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.combo-parts-edit select {
+  background: #000;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  font: inherit;
+  padding: 0.55rem 0.7rem;
+  min-width: min(360px, 100%);
+}
+
+.combo-numbers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.combo-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1rem 0;
+}
+
+@media (max-width: 768px) {
+  .combo-numbers {
+    grid-template-columns: 1fr 1fr;
+  }
+}

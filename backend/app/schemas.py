@@ -41,6 +41,8 @@ class EventOut(BaseModel):
     sales_start: datetime | None
     currency: str = 'cad'
     tiers: list[TierOut]
+    # Combo passes that include this event ("Going to both?")
+    combos: list['ComboOut'] = []
 
 
 class EventCard(BaseModel):
@@ -108,6 +110,15 @@ class OrderPageOut(BaseModel):
     email_hint: str  # masked, e.g. se•••@gmail.com
     resends_left: int
     total_cents: int
+    title: str  # the event name, or the combo's name
+    is_combo: bool = False
+    event: TicketEventOut | None  # single-event orders (None for combos)
+    tickets: list[TicketOut]
+    # Tickets grouped by event, soonest first (one group, or one per night for a combo)
+    groups: list['OrderGroupOut'] = []
+
+
+class OrderGroupOut(BaseModel):
     event: TicketEventOut
     tickets: list[TicketOut]
 
@@ -184,6 +195,7 @@ class AdminTierOut(BaseModel):
     price_men_cents: int | None = None
     sold_ladies: int = 0
     sold_men: int = 0
+    sold_combo: int = 0  # of `sold`, how many came from combo passes
 
 
 class SalesDay(BaseModel):
@@ -238,6 +250,7 @@ class AttendeeOut(BaseModel):
     buyer_name: str
     buyer_email: str
     paid_at: datetime | None
+    combo: str | None = None  # name of the combo pass this ticket came from
 
 
 class EventIn(BaseModel):
@@ -290,3 +303,97 @@ class TierPatch(BaseModel):
     gendered: bool | None = None
     price_ladies_cents: int | None = Field(default=None, ge=0)
     price_men_cents: int | None = Field(default=None, ge=0)
+
+
+# ---------- combos ----------
+
+
+class ComboPartOut(BaseModel):
+    event_slug: str
+    event_name: str
+    starts_at: datetime
+    venue: str | None  # public venue (never a secret address)
+    poster_url: str | None
+    tier: str
+
+
+class ComboOut(BaseModel):
+    slug: str
+    name: str
+    description: str | None
+    poster_url: str | None
+    price_cents: int
+    fee_for_one_cents: int
+    max_per_order: int
+    buyable: int
+    status: TierStatus
+    sales_end: datetime | None
+    parts: list[ComboPartOut]
+
+
+class ComboCheckoutIn(BaseModel):
+    combo_slug: str
+    quantity: int = Field(ge=1, le=20)
+    name: str = Field(min_length=1, max_length=200)
+    email: EmailStr
+    # One name (and optional "send it to them" email) per pass
+    names: list[str | None] = Field(default_factory=list, max_length=20)
+    emails: list[EmailStr | None] = Field(default_factory=list, max_length=20)
+
+
+class AdminComboOut(BaseModel):
+    id: int
+    slug: str
+    name: str
+    description: str | None
+    poster_url: str | None
+    price_cents: int
+    quantity: int  # cap on passes
+    max_per_order: int
+    sales_end: datetime | None
+    on_sale: bool
+    tier_ids: list[int]
+    parts: list[ComboPartOut]
+    sold: int  # passes in paid orders
+    held: int  # passes in checkouts right now
+    revenue_cents: int  # combo price x passes sold (what you keep)
+    fees_cents: int
+    orders: int
+
+
+class TierChoice(BaseModel):
+    """A tier a combo can draw from, for the combo editor."""
+
+    id: int
+    label: str  # e.g. "Asylum · Regular"
+    event_slug: str
+
+
+class ComboIn(BaseModel):
+    slug: str = Field(pattern=r'^[a-z0-9]+(-[a-z0-9]+)*$', max_length=80)
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = None
+    poster_url: str | None = None
+    price_cents: int = Field(ge=0)
+    quantity: int = Field(ge=0)
+    max_per_order: int = Field(default=4, ge=1, le=20)
+    sales_end: datetime | None = None
+    tier_ids: list[int] = Field(min_length=2, max_length=5)
+
+
+class ComboPatch(BaseModel):
+    slug: str | None = Field(default=None, pattern=r'^[a-z0-9]+(-[a-z0-9]+)*$', max_length=80)
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+    poster_url: str | None = None
+    price_cents: int | None = Field(default=None, ge=0)
+    quantity: int | None = Field(default=None, ge=0)
+    max_per_order: int | None = Field(default=None, ge=1, le=20)
+    sales_end: datetime | None = None
+    on_sale: bool | None = None
+    tier_ids: list[int] | None = Field(default=None, min_length=2, max_length=5)
+
+
+# Resolve forward references between the shapes above
+EventOut.model_rebuild()
+OrderPageOut.model_rebuild()

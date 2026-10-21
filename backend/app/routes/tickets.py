@@ -12,7 +12,7 @@ from app.db import get_db
 from app.emails import mask_email, send_tickets_email
 from app.models import Order, OrderStatus, Ticket, TicketStatus, public_venue
 from app.qr import qr_png, qr_svg
-from app.schemas import OrderPageOut, ResendIn, TicketEventOut, TicketOut, TicketPageOut
+from app.schemas import OrderGroupOut, OrderPageOut, ResendIn, TicketEventOut, TicketOut, TicketPageOut
 
 router = APIRouter(tags=['tickets'])
 
@@ -71,6 +71,20 @@ def get_order(order_id: uuid.UUID, db: Session = Depends(get_db)):
     order = db.get(Order, order_id)
     if not order:
         raise HTTPException(404, 'Order not found')
+    paid = order.status == OrderStatus.paid
+    tickets = sorted(order.tickets, key=lambda t: (t.event.starts_at, t.ticket_type.sort_order))
+    events = {t.event.id: t.event for t in tickets}
+    if not events:  # not paid yet: show which events it's for
+        if order.event:
+            events[order.event.id] = order.event
+        elif order.combo:
+            events = {p.ticket_type.event.id: p.ticket_type.event for p in order.combo.parts}
+    groups = []
+    for e in sorted(events.values(), key=lambda e: e.starts_at):
+        group = [t for t in tickets if t.event_id == e.id]
+        # The secret address only goes with a valid ticket for that event
+        valid_here = paid and any(t.status == TicketStatus.valid for t in group)
+        groups.append(OrderGroupOut(event=_event_out(e, valid_here), tickets=[_ticket_out(t) for t in group]))
     return OrderPageOut(
         id=str(order.id),
         status=order.status.value,
@@ -78,11 +92,11 @@ def get_order(order_id: uuid.UUID, db: Session = Depends(get_db)):
         email_hint=mask_email(order.buyer_email),
         resends_left=max(MAX_RESENDS - order.resend_count, 0),
         total_cents=order.total_cents,
-        event=_event_out(
-            order.event,
-            order.status == OrderStatus.paid and any(t.status == TicketStatus.valid for t in order.tickets),
-        ),
-        tickets=[_ticket_out(t) for t in sorted(order.tickets, key=lambda t: t.ticket_type.sort_order)],
+        title=order.combo.name if order.combo else (order.event.name if order.event else 'Your tickets'),
+        is_combo=order.combo_id is not None,
+        event=groups[0].event if (groups and not order.combo_id) else None,
+        tickets=[_ticket_out(t) for t in tickets],
+        groups=groups,
     )
 
 

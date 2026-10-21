@@ -73,6 +73,9 @@ export default function Dashboard() {
         <button className="dash-ghost" onClick={() => setCreating(true)}>
           + new event
         </button>
+        <Link to="/admin/combos" className="dash-ghost">
+          combos
+        </Link>
         <Link to="/admin/scan" className="dash-ghost">
           scanner
         </Link>
@@ -173,6 +176,7 @@ function Overview({ event }: { event: AdminEvent }) {
                   </div>
                   <span className="meter-text">
                     {t.sold} / {t.quantity}
+                    {t.sold_combo > 0 && <div className="dash-sub">{t.sold_combo} via combo</div>}
                     {t.gendered && t.sold > 0 && (
                       <div className="dash-sub">
                         {t.sold_ladies} ladies · {t.sold_men} men
@@ -300,6 +304,7 @@ function Attendees({ event, onChange }: { event: AdminEvent; onChange: () => voi
                 <td>
                   {a.tier}
                   {a.gender && <div className="dash-sub">{a.gender === 'ladies' ? 'Ladies' : 'Men'}</div>}
+                  {a.combo && <div className="dash-sub">{a.combo}</div>}
                 </td>
                 <td>
                   {a.status === 'void' ? (
