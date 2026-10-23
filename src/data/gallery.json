@@ -344,26 +344,6 @@
           "bytes": 2999101
         },
         {
-          "source": "IMG_0151.JPG",
-          "hash": "71dd12488d",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(24, 24, 24)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0151-71dd12488d-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0151-71dd12488d-full.webp",
-          "bytes": 1407174
-        },
-        {
-          "source": "IMG_0152.JPG",
-          "hash": "985c7c37da",
-          "width": 800,
-          "height": 600,
-          "color": "rgb(24, 24, 24)",
-          "thumb": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0152-985c7c37da-thumb.webp",
-          "full": "https://media.sonsofcaesar.xyz/gallery/on-deck/img-0152-985c7c37da-full.webp",
-          "bytes": 1323109
-        },
-        {
           "source": "IMG_0153.JPG",
           "hash": "1032deb7d5",
           "width": 800,
@@ -707,6 +687,51 @@
           "thumb": "https://media.sonsofcaesar.xyz/gallery/vol-ii/img-0202-b0a4f69375-thumb.webp",
           "full": "https://media.sonsofcaesar.xyz/gallery/vol-ii/img-0202-b0a4f69375-full.webp",
           "bytes": 1205792
+        }
+      ]
+    },
+    "flyers": {
+      "folder": "flyers",
+      "photos": [
+        {
+          "source": "asylum-original.png",
+          "hash": "0f04a20e2c",
+          "width": 640,
+          "height": 800,
+          "color": "rgb(8, 8, 8)",
+          "thumb": "https://media.sonsofcaesar.xyz/gallery/flyers/asylum-original-0f04a20e2c-thumb.webp",
+          "full": "https://media.sonsofcaesar.xyz/gallery/flyers/asylum-original-0f04a20e2c-full.webp",
+          "bytes": 1806808
+        },
+        {
+          "source": "nightmare-original-v2.png",
+          "hash": "84c993d7bd",
+          "width": 640,
+          "height": 800,
+          "color": "rgb(8, 8, 8)",
+          "thumb": "https://media.sonsofcaesar.xyz/gallery/flyers/nightmare-original-v2-84c993d7bd-thumb.webp",
+          "full": "https://media.sonsofcaesar.xyz/gallery/flyers/nightmare-original-v2-84c993d7bd-full.webp",
+          "bytes": 627812
+        },
+        {
+          "source": "nightmare-original-v3.png",
+          "hash": "79faec252a",
+          "width": 640,
+          "height": 800,
+          "color": "rgb(8, 8, 8)",
+          "thumb": "https://media.sonsofcaesar.xyz/gallery/flyers/nightmare-original-v3-79faec252a-thumb.webp",
+          "full": "https://media.sonsofcaesar.xyz/gallery/flyers/nightmare-original-v3-79faec252a-full.webp",
+          "bytes": 631353
+        },
+        {
+          "source": "nightmare-original.png",
+          "hash": "46371d7404",
+          "width": 600,
+          "height": 800,
+          "color": "rgb(8, 8, 8)",
+          "thumb": "https://media.sonsofcaesar.xyz/gallery/flyers/nightmare-original-46371d7404-thumb.webp",
+          "full": "https://media.sonsofcaesar.xyz/gallery/flyers/nightmare-original-46371d7404-full.webp",
+          "bytes": 614405
         }
       ]
     }
