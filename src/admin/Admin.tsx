@@ -89,3 +89,11 @@ function Login({ onLogin }: { onLogin: (me: StaffMe) => void }) {
     </div>
   )
 }
+
+// Pages partners (collabs) can't use: the scanner and combos
+export function NotForPartners({ children }: { children: React.ReactNode }) {
+  if (useStaff().role === 'partner') {
+    return <p className="admin-placeholder">This page isn't available on your account.</p>
+  }
+  return <>{children}</>
+}

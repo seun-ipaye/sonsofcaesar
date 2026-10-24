@@ -15,11 +15,15 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
-from app.models import LoginFailure, Staff, StaffRole, StaffSession
+from app.models import Event, LoginFailure, Staff, StaffEvent, StaffRole, StaffSession
 from app.security import hash_password, verify_password
 
 COOKIE = 'soc_session'
-SESSION_LENGTH = {StaffRole.door: timedelta(hours=12), StaffRole.admin: timedelta(days=7)}
+SESSION_LENGTH = {
+    StaffRole.door: timedelta(hours=12),
+    StaffRole.admin: timedelta(days=7),
+    StaffRole.partner: timedelta(days=7),  # view-only, so a longer login is fine
+}
 MAX_FAILURES = 10
 LOCKOUT = timedelta(minutes=15)
 
@@ -104,6 +108,44 @@ def current_staff(
     if not session or session.expires_at < datetime.now(UTC) or not session.staff.active:
         raise HTTPException(401, 'Not logged in')
     return session.staff
+
+
+def require_door(staff: Staff = Depends(current_staff)) -> Staff:
+    """Scanner and lookup: admins and door staff only (partners only watch)."""
+    if staff.role not in (StaffRole.admin, StaffRole.door):
+        raise HTTPException(403, 'Not allowed')
+    return staff
+
+
+def partner_event_ids(db: Session, staff: Staff) -> set[int]:
+    return set(db.scalars(select(StaffEvent.event_id).where(StaffEvent.staff_id == staff.id)))
+
+
+# What a partner may do in the admin API: look at these pages, for their own events.
+# Everything else (every edit, combos, staff, emails, voiding) is admin-only by default.
+PARTNER_ROUTES = {
+    '/admin/events',
+    '/admin/events/{slug}',
+    '/admin/events/{slug}/attendees',
+    '/admin/events/{slug}/attendees.csv',
+}
+
+
+def admin_or_partner_view(request: Request, db: Session = Depends(get_db), staff: Staff = Depends(current_staff)) -> Staff:
+    """Guard for the whole admin API: admins can do anything; partners can only
+    read the overview and attendees of events they've been given."""
+    if staff.role == StaffRole.admin:
+        return staff
+    route = request.scope.get('route')
+    template = getattr(route, 'path', '')
+    if staff.role != StaffRole.partner or request.method != 'GET' or template not in PARTNER_ROUTES:
+        raise HTTPException(403, 'Admins only')
+    slug = request.path_params.get('slug')
+    if slug is not None:
+        event = db.scalar(select(Event).where(Event.slug == slug))
+        if not event or event.id not in partner_event_ids(db, staff):
+            raise HTTPException(403, 'Not your event')
+    return staff
 
 
 def require_admin(staff: Staff = Depends(current_staff)) -> Staff:

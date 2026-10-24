@@ -60,6 +60,7 @@ GENDER_LABEL = {Gender.ladies: 'Ladies', Gender.men: 'Men'}
 class StaffRole(str, enum.Enum):
     admin = 'admin'  # everything
     door = 'door'  # scan + lookup only
+    partner = 'partner'  # read-only overview + attendees for assigned events; no scanner
 
 
 SECRET_VENUE_TEXT = 'Address sent after purchase'
@@ -290,3 +291,12 @@ class LoginFailure(Base):
 def public_venue(event: Event) -> str | None:
     """What the public sees as the venue: never the secret address."""
     return SECRET_VENUE_TEXT if event.secret_address else event.venue
+
+
+class StaffEvent(Base):
+    """Which events a partner can see (admins and door staff don't need rows here)."""
+
+    __tablename__ = 'staff_events'
+
+    staff_id: Mapped[int] = mapped_column(ForeignKey('staff.id', ondelete='CASCADE'), primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey('events.id', ondelete='CASCADE'), primary_key=True)

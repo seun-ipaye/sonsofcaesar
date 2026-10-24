@@ -152,7 +152,7 @@ export function formatWhen(iso: string) {
 
 export const money = (cents: number) => `$${(cents / 100).toFixed(2)}`
 
-export type StaffMe = { name: string; email: string; role: 'admin' | 'door' }
+export type StaffMe = { name: string; email: string; role: 'admin' | 'door' | 'partner' }
 
 export type CheckinTicket = {
   code: string

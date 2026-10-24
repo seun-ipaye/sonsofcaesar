@@ -6,13 +6,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
-from app.auth import current_staff
+from app.auth import current_staff, require_door
 from app.db import get_db
 from app.emails import mask_email
 from app.models import Event, Order, Staff, StaffRole, Ticket, TicketStatus
 from app.schemas import CheckinIn, CheckinResult, CheckinStats, CheckinTicket, StaffEventOut
 
-router = APIRouter(prefix='/checkin', tags=['checkin'], dependencies=[Depends(current_staff)])
+# Admins and door staff only: partners can watch the numbers but don't scan
+router = APIRouter(prefix='/checkin', tags=['checkin'], dependencies=[Depends(require_door)])
 
 UNDO_WINDOW = timedelta(minutes=5)
 

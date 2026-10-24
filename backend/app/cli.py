@@ -354,21 +354,76 @@ def restore_backup(
 def add_staff(
     email: str = typer.Option(...),
     name: str = typer.Option(...),
-    role: StaffRole = typer.Option(StaffRole.door, help='admin = everything, door = scan + lookup only'),
+    role: StaffRole = typer.Option(
+        StaffRole.door,
+        help='admin = everything, door = scan + lookup only, partner = view one event (use --event)',
+    ),
+    event: list[str] = typer.Option([], '--event', help='Partners: an event they can see (repeat for more)'),
     password: str = typer.Option(..., prompt=True, hide_input=True, confirmation_prompt=True),
 ):
     """Create a staff login. You'll be asked for the password (hidden)."""
     if len(password) < 10:
         typer.secho('Use at least 10 characters.', fg='red')
         raise typer.Exit(1)
+    if role == StaffRole.partner and not event:
+        typer.secho('Partners need at least one --event <link name>.', fg='red')
+        raise typer.Exit(1)
     with SessionLocal() as db:
         email = email.strip().lower()
         if db.scalar(select(Staff).where(Staff.email == email)):
             typer.secho(f'{email} already has a login.', fg='red')
             raise typer.Exit(1)
-        db.add(Staff(email=email, name=name, role=role, password_hash=hash_password(password)))
+        events = [get_event(db, slug) for slug in event]  # stops if a link name is wrong
+        staff = Staff(email=email, name=name, role=role, password_hash=hash_password(password))
+        db.add(staff)
+        db.flush()
+        if role == StaffRole.partner:
+            from app.models import StaffEvent
+
+            db.add_all([StaffEvent(staff_id=staff.id, event_id=e.id) for e in events])
         db.commit()
-        typer.secho(f'Added {name} <{email}> as {role.value}', fg='green')
+        extra = f" for {', '.join(e.name for e in events)}" if role == StaffRole.partner else ''
+        typer.secho(f'Added {name} <{email}> as {role.value}{extra}', fg='green')
+
+
+def _partner(db: Session, email: str) -> Staff:
+    staff = db.scalar(select(Staff).where(Staff.email == email.strip().lower()))
+    if not staff:
+        typer.secho(f'No staff with email {email}', fg='red')
+        raise typer.Exit(1)
+    if staff.role != StaffRole.partner:
+        typer.secho(f'{staff.name} is {staff.role.value}, not a partner.', fg='red')
+        raise typer.Exit(1)
+    return staff
+
+
+@cli.command()
+def grant_event(email: str, event_slug: str):
+    """Let a partner see another event."""
+    from app.models import StaffEvent
+
+    with SessionLocal() as db:
+        staff = _partner(db, email)
+        event = get_event(db, event_slug)
+        if not db.get(StaffEvent, (staff.id, event.id)):
+            db.add(StaffEvent(staff_id=staff.id, event_id=event.id))
+            db.commit()
+        typer.secho(f'{staff.name} can see {event.name}', fg='green')
+
+
+@cli.command()
+def revoke_event(email: str, event_slug: str):
+    """Stop a partner seeing an event (instantly)."""
+    from app.models import StaffEvent
+
+    with SessionLocal() as db:
+        staff = _partner(db, email)
+        event = get_event(db, event_slug)
+        row = db.get(StaffEvent, (staff.id, event.id))
+        if row:
+            db.delete(row)
+            db.commit()
+        typer.secho(f'{staff.name} can no longer see {event.name}', fg='green')
 
 
 @cli.command()
@@ -416,7 +471,15 @@ def list_staff():
     with SessionLocal() as db:
         for s in db.scalars(select(Staff).order_by(Staff.created_at)):
             state = '' if s.active else typer.style(' (disabled)', fg='yellow')
-            typer.echo(f'  {s.name:<20} {s.email:<32} {s.role.value}{state}')
+            events = ''
+            if s.role == StaffRole.partner:
+                from app.models import StaffEvent
+
+                names = db.scalars(
+                    select(Event.name).join(StaffEvent, StaffEvent.event_id == Event.id).where(StaffEvent.staff_id == s.id)
+                ).all()
+                events = f"  sees: {', '.join(names) or 'nothing yet'}"
+            typer.echo(f'  {s.name:<20} {s.email:<32} {s.role.value}{state}{events}')
 
 
 if __name__ == '__main__':

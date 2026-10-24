@@ -9,7 +9,7 @@ import Party from './pages/Party'
 import TicketView from './pages/TicketView'
 import OrderView from './pages/OrderView'
 import Privacy from './pages/Privacy'
-import Admin from './admin/Admin'
+import Admin, { NotForPartners } from './admin/Admin'
 import AdminHome from './admin/AdminHome'
 import Scanner from './admin/Scanner'
 import Combos from './admin/Combos'
@@ -45,8 +45,8 @@ export default function App() {
       {/* Staff area: its own layout, no public header/footer */}
       <Route path="/admin" element={<Admin />}>
         <Route index element={<AdminHome />} />
-        <Route path="scan" element={<Scanner />} />
-        <Route path="combos" element={<Combos />} />
+        <Route path="scan" element={<NotForPartners><Scanner /></NotForPartners>} />
+        <Route path="combos" element={<NotForPartners><Combos /></NotForPartners>} />
       </Route>
       {/* Unknown addresses go back to the intro */}
       <Route path="*" element={<Navigate to="/" replace />} />

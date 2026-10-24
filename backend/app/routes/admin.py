@@ -7,10 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
-from app.auth import require_admin
+from app.auth import admin_or_partner_view, current_staff, partner_event_ids
 from app.db import get_db
 from app.inventory import taken_counts
-from app.models import GENDER_LABEL, Event, Gender, Order, OrderItem, OrderStatus, Staff, Ticket, TicketStatus, TicketType
+from app.models import GENDER_LABEL, Event, Gender, Order, OrderItem, OrderStatus, Staff, StaffRole, Ticket, TicketStatus, TicketType
+from app.emails import mask_email
 from app.schemas import (
     AdminEventListItem,
     AdminEventOut,
@@ -23,7 +24,9 @@ from app.schemas import (
     TierPatch,
 )
 
-router = APIRouter(prefix='/admin', tags=['admin'], dependencies=[Depends(require_admin)])
+# Admins: everything. Partners: read-only overview + attendees of their own events
+# (see admin_or_partner_view; anything not on its list is admin-only).
+router = APIRouter(prefix='/admin', tags=['admin'], dependencies=[Depends(admin_or_partner_view)])
 
 
 def _event(db: Session, slug: str) -> Event:
@@ -103,8 +106,11 @@ def _tier_stats(db: Session, event: Event) -> dict[int, dict]:
 
 
 @router.get('/events', response_model=list[AdminEventListItem])
-def list_events(db: Session = Depends(get_db)):
+def list_events(db: Session = Depends(get_db), staff: Staff = Depends(current_staff)):
     events = db.scalars(select(Event).order_by(Event.starts_at.desc())).all()
+    if staff.role == StaffRole.partner:
+        mine = partner_event_ids(db, staff)
+        events = [e for e in events if e.id in mine]
     sold = dict(
         db.execute(
             select(Ticket.event_id, func.count()).where(Ticket.status == TicketStatus.valid).group_by(Ticket.event_id)
@@ -189,6 +195,16 @@ def event_summary(slug: str, db: Session = Depends(get_db)):
 # ---------- attendees ----------
 
 
+def _masked(a: AttendeeOut) -> AttendeeOut:
+    # Partners see who's coming, but not people's full email addresses
+    return a.model_copy(
+        update={
+            'buyer_email': mask_email(a.buyer_email),
+            'holder_email': mask_email(a.holder_email) if a.holder_email else None,
+        }
+    )
+
+
 def _attendees(db: Session, event: Event) -> list[AttendeeOut]:
     tickets = db.scalars(
         select(Ticket).join(Order).where(Ticket.event_id == event.id).order_by(func.lower(Ticket.holder_name))
@@ -214,17 +230,21 @@ def _attendees(db: Session, event: Event) -> list[AttendeeOut]:
 
 
 @router.get('/events/{slug}/attendees', response_model=list[AttendeeOut])
-def attendees(slug: str, db: Session = Depends(get_db)):
-    return _attendees(db, _event(db, slug))
+def attendees(slug: str, db: Session = Depends(get_db), staff: Staff = Depends(current_staff)):
+    rows = _attendees(db, _event(db, slug))
+    return [_masked(a) for a in rows] if staff.role == StaffRole.partner else rows
 
 
 @router.get('/events/{slug}/attendees.csv')
-def attendees_csv(slug: str, db: Session = Depends(get_db)):
+def attendees_csv(slug: str, db: Session = Depends(get_db), staff: Staff = Depends(current_staff)):
     event = _event(db, slug)
+    partner = staff.role == StaffRole.partner
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(['Name', 'Tier', 'Gender', 'Status', 'Checked in', 'Checked in by', 'Ticket email', 'Buyer', 'Buyer email', 'Paid', 'Ticket code'])
     for a in _attendees(db, event):
+        if partner:
+            a = _masked(a)
         w.writerow([
             a.holder_name, a.tier, GENDER_LABEL[Gender(a.gender)] if a.gender else '', a.status,
             a.checked_in_at.isoformat() if a.checked_in_at else '', a.checked_in_by or '',

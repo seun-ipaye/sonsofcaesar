@@ -12,11 +12,14 @@ import {
   type Attendee,
 } from '../api'
 import SalesChart from './SalesChart'
+import { useStaff } from './Admin'
 import './Dashboard.css'
 
 type Tab = 'overview' | 'attendees' | 'settings'
 
 export default function Dashboard() {
+  // Partners (collabs): read-only overview + attendees of the events shared with them
+  const partner = useStaff().role === 'partner'
   const [events, setEvents] = useState<AdminEventListItem[] | null>(null)
   const [slug, setSlug] = useState('')
   const [event, setEvent] = useState<AdminEvent | null>(null)
@@ -47,7 +50,11 @@ export default function Dashboard() {
 
   if (events === null) return <p className="dash-empty">Loading…</p>
 
-  if (creating || events.length === 0) {
+  if (partner && events.length === 0) {
+    return <p className="dash-empty">No events have been shared with you yet.</p>
+  }
+
+  if (!partner && (creating || events.length === 0)) {
     return (
       <NewEvent
         onCancel={events.length ? () => setCreating(false) : undefined}
@@ -70,19 +77,23 @@ export default function Dashboard() {
             </option>
           ))}
         </select>
-        <button className="dash-ghost" onClick={() => setCreating(true)}>
-          + new event
-        </button>
-        <Link to="/admin/combos" className="dash-ghost">
-          combos
-        </Link>
-        <Link to="/admin/scan" className="dash-ghost">
-          scanner
-        </Link>
+        {!partner && (
+          <>
+            <button className="dash-ghost" onClick={() => setCreating(true)}>
+              + new event
+            </button>
+            <Link to="/admin/combos" className="dash-ghost">
+              combos
+            </Link>
+            <Link to="/admin/scan" className="dash-ghost">
+              scanner
+            </Link>
+          </>
+        )}
       </div>
 
       <nav className="dash-tabs">
-        {(['overview', 'attendees', 'settings'] as Tab[]).map((t) => (
+        {((partner ? ['overview', 'attendees'] : ['overview', 'attendees', 'settings']) as Tab[]).map((t) => (
           <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
             {t}
           </button>
@@ -94,7 +105,7 @@ export default function Dashboard() {
       ) : tab === 'overview' ? (
         <Overview event={event} />
       ) : tab === 'attendees' ? (
-        <Attendees event={event} onChange={loadEvent} />
+        <Attendees event={event} onChange={loadEvent} readOnly={partner} />
       ) : (
         <Settings
           // Fresh form per event, so switching events never carries values across
@@ -214,7 +225,15 @@ function Tile({ label, value, sub }: { label: string; value: string; sub: string
 
 type Filter = 'all' | 'in' | 'not_in' | 'void'
 
-function Attendees({ event, onChange }: { event: AdminEvent; onChange: () => void }) {
+function Attendees({
+  event,
+  onChange,
+  readOnly = false,
+}: {
+  event: AdminEvent
+  onChange: () => void
+  readOnly?: boolean
+}) {
   const [rows, setRows] = useState<Attendee[] | null>(null)
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
@@ -291,7 +310,7 @@ function Attendees({ event, onChange }: { event: AdminEvent; onChange: () => voi
               <th>Status</th>
               <th>Bought by</th>
               <th>Code</th>
-              <th />
+              {!readOnly && <th />}
             </tr>
           </thead>
           <tbody>
@@ -323,11 +342,13 @@ function Attendees({ event, onChange }: { event: AdminEvent; onChange: () => voi
                   <div className="dash-sub">{a.buyer_email}</div>
                 </td>
                 <td className="mono">…{a.code.slice(-4)}</td>
-                <td>
-                  <button className="dash-link" onClick={() => toggleVoid(a)}>
-                    {a.status === 'void' ? 'restore' : 'void'}
-                  </button>
-                </td>
+                {!readOnly && (
+                  <td>
+                    <button className="dash-link" onClick={() => toggleVoid(a)}>
+                      {a.status === 'void' ? 'restore' : 'void'}
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
