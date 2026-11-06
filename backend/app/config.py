@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     backup_r2_bucket: str = 'sonsofcaesar-backups'
     # Support agent: embeddings for knowledge search
     voyage_api_key: str = ''
+    anthropic_api_key: str = ''
+    agent_model: str = 'claude-opus-5-5'
     # Websites allowed to call the API from the browser, comma-separated
     cors_origins: str = 'http://localhost:5173'
 
