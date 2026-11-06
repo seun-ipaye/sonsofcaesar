@@ -25,3 +25,5 @@ dist-ssr
 
 # Original gallery photos/videos (uploaded to R2 by script, never committed)
 gallery-source/
+
+admin.txt
