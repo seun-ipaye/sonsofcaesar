@@ -13,6 +13,11 @@ export default function Privacy() {
         Resend.
       </p>
       <p>
+        Our questions chat is an AI assistant. What you type is sent to Anthropic, and to Voyage AI to search our
+        event info, so they can answer it. We save chats for 30 days to check they're working, with emails and order
+        numbers removed, but a name or anything else you type may be kept. Please don't share anything sensitive.
+      </p>
+      <p>
         Photos in our gallery are taken with people's permission at our events. If you'd like a photo of you removed,
         or your details deleted, DM{' '}
         <a href="https://instagram.com/socfrvr" target="_blank" rel="noreferrer">
