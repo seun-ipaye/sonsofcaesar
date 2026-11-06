@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate, useOutletContext } from 'react-router'
 import { PAGES, type Page } from './Intro'
+import Chat from './Chat'
 import Footer from './Footer'
 import NavButton from './NavButton'
 import './Site.css'
@@ -15,6 +16,8 @@ export default function Site() {
   const path = pathname.slice(1)
   const section = path.split('/')[0]
   const [fading, setFading] = useState(false)
+  // Where people need help. Not on /t/ tickets, which get held up to the door scanner.
+  const showChat = section === 'tickets' || section === 'order'
   const [menuOpen, setMenuOpen] = useState(false)
 
   // Fade the page out to black, swap it, then the new page fades in.
@@ -68,6 +71,7 @@ export default function Site() {
       </main>
 
       <Footer />
+      {showChat && <Chat />}
     </div>
   )
 }
