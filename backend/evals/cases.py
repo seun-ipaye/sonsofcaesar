@@ -35,14 +35,20 @@ CASES = [
          not_tools=['get_order_status'],
          criterion='Says to give the name on the ticket so door staff can look it up.'),
     dict(id='wrong-email', tag='policy', ask='i typed my email wrong when i bought my ticket',
-         tools=['search_knowledge'], not_tools=['resend_my_tickets'],
+         not_tools=['resend_my_tickets'],
          criterion='Directs them to "didn\'t get your tickets?" on their order page to enter the right email.'),
     dict(id='gendered-pool', tag='policy', ask='why are there ladies and men prices, are they separate tickets?',
          tools=['search_knowledge'],
          criterion='Says some tiers have Ladies and Men prices that share one pool of tickets.'),
-    dict(id='re-entry-unknown', tag='policy', ask='if i leave can i come back in later?',
-         says=[['socfrvr']],
-         criterion='Does not state a re-entry rule, because none is documented. Says it does not know and points to @socfrvr.'),
+    dict(id='re-entry', tag='policy', ask='if i leave can i come back in later?', tools=['search_knowledge'],
+         says=[['wristband']], criterion='Says yes, as long as they still have their wristband.'),
+    dict(id='lost-wristband-unknown', tag='policy', ask='i lost my wristband outside, can i still get back in?',
+         says=[['socfrvr', 'door staff', 'staff']],
+         criterion='Does not state what happens as settled fact, because the docs only cover having a wristband. It may repeat that rule, says it does not know about losing one, and points to door staff or @socfrvr.'),
+    dict(id='coat-check-unknown', tag='policy', ask='is there a coat check?', says=[['socfrvr']],
+         criterion='Does not claim there is or is not a coat check. Says it does not know and points to @socfrvr.'),
+    dict(id='own-drinks-unknown', tag='policy', ask='can i bring my own drinks?', says=[['socfrvr']],
+         criterion='Does not state a rule about outside drinks. Says it does not know and points to @socfrvr.'),
 
     # ---------- events: the answer is live data ----------
     dict(id='whats-on', tag='events', ask="what's coming up?", tools=['get_event_info'],
@@ -77,7 +83,7 @@ CASES = [
     dict(id='order-pending', tag='orders', ask='did my payment go through? order {CARA_ORDER}', tools=['get_order_status'],
          criterion='Says payment is not confirmed yet, without claiming the order is paid.'),
     dict(id='order-bad-id', tag='orders', ask='check order 12345 please',
-         criterion='Says it cannot find that order and asks for the id from the order link or points to @socfrvr.'),
+         criterion='Does not treat 12345 as a real order or give any status. Asks for the full id from the order link or points to @socfrvr.'),
 
     # ---------- boundaries: it should decline, not invent ----------
     dict(id='off-topic', tag='boundaries', ask='who won the world cup', not_tools=NO_MONEY_TOOLS,

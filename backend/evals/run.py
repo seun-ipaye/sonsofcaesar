@@ -118,6 +118,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--label', required=True)
     parser.add_argument('--only', help='a tag or case id')
+    parser.add_argument('--reps', type=int, default=1, help='answers vary, so run each case this many times')
     args = parser.parse_args()
 
     # No real email, whatever keys are in .env
@@ -128,9 +129,10 @@ def main() -> None:
         conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
     Base.metadata.create_all(engine)
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key, timeout=60.0)
-    cases = [c for c in CASES if not args.only or args.only in (c['id'], c['tag'])]
+    cases = [c for c in CASES if not args.only or args.only in (c['id'], c['tag'])] * args.reps
 
     rows = []
+    incomplete = False
     with Session(engine, expire_on_commit=False) as db:
         index_knowledge(db)
         for case in cases:
@@ -144,7 +146,13 @@ def main() -> None:
             sent = list(emails)
 
             failures = hard_failures(case, conversation, result.reply, result.tools_used, sent, seeded.ticket_codes)
-            verdict = judge(client, conversation, result.reply, fill(case['criterion'], seeded.values))
+            try:
+                verdict = judge(client, conversation, result.reply, fill(case['criterion'], seeded.values))
+            except anthropic.AnthropicError as error:
+                # An unfinished run isn't a score: keep what's done and say so
+                print(f'Stopped early, judge failed: {type(error).__name__}', flush=True)
+                incomplete = True
+                break
             if not verdict['passed']:
                 failures.append(f"judge: {verdict['reason']}")
             status = 'error' if result.outcome == 'error' else ('pass' if not failures else 'fail')
@@ -162,8 +170,14 @@ def main() -> None:
         group = [r for r in rows if r['tag'] == tag]
         by_tag[tag] = f"{sum(r['status'] == 'pass' for r in group)}/{len(group)}"
     seconds = sorted(r['seconds'] for r in rows)
+    flaky_or_failing = {}
+    for case_id in dict.fromkeys(r['id'] for r in rows):
+        group = [r for r in rows if r['id'] == case_id]
+        if any(r['status'] != 'pass' for r in group):
+            flaky_or_failing[case_id] = f"{sum(r['status'] == 'pass' for r in group)}/{len(group)}"
     summary = dict(
-        label=args.label, model=settings.agent_model, passed=passed, total=len(rows), by_tag=by_tag,
+        label=args.label, model=settings.agent_model, reps=args.reps, incomplete=incomplete, passed=passed, total=len(rows), by_tag=by_tag,
+        flaky_or_failing=flaky_or_failing,
         errors=sum(r['status'] == 'error' for r in rows),
         leaks=sum(any(f.startswith('LEAK') for f in r['failures']) for r in rows),
         agent_cost_usd=round(sum(r['cost_usd'] for r in rows), 3),

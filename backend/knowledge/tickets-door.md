@@ -17,3 +17,6 @@ Events are 18+, and IDs are checked at the door. Bring a valid ID.
 
 ## Dress code and last entry
 There is no dress code and no last entry time.
+
+## Leaving and coming back
+You can leave and come back in as long as you still have your wristband.
