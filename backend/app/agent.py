@@ -102,6 +102,8 @@ def run_agent(db: Session, conversation: list[dict[str, str]], client: anthropic
             messages.append({'role': 'assistant', 'content': response.content})
             messages.append({'role': 'user', 'content': _run_tools(db, calls)})
             result.tools_used += [call.name for call in calls]
+            # Don't hold a database connection while waiting on Claude
+            db.commit()
 
         result.outcome = 'out_of_steps'
     except anthropic.AnthropicError as error:

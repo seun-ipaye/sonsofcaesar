@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     voyage_api_key: str = ''
     anthropic_api_key: str = ''
     agent_model: str = 'claude-opus-5-5'
+    # Off until deliberately turned on, since every chat costs money
+    chat_enabled: bool = False
+    chat_daily_budget_usd: float = 5.0
     # Websites allowed to call the API from the browser, comma-separated
     cors_origins: str = 'http://localhost:5173'
 

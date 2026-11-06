@@ -15,6 +15,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -319,3 +320,22 @@ class KnowledgeChunk(Base):
     # Changes when the text or embedding model does, so unchanged sections aren't re-embedded
     content_hash: Mapped[str] = mapped_column(String(64), unique=True)
     embedding: Mapped[list[float]] = mapped_column(Vector(EMBEDDING_DIMENSIONS))
+
+
+class ChatLog(Base):
+    """One support chat reply, for spend limits and for seeing how the agent does.
+    Emails and order ids are removed before saving, and rows are deleted after 30 days."""
+
+    __tablename__ = 'chat_logs'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    # Salted with the date, so someone's visits can't be linked across days
+    ip_hash: Mapped[str] = mapped_column(String(64), index=True)
+    question: Mapped[str] = mapped_column(Text)
+    reply: Mapped[str] = mapped_column(Text)
+    outcome: Mapped[str] = mapped_column(String(20))
+    tools_used: Mapped[list[str]] = mapped_column(JSON, default=list)
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    cost_usd: Mapped[float] = mapped_column(Float, default=0.0)

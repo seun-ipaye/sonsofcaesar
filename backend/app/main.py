@@ -10,7 +10,7 @@ from sqlalchemy import text
 
 from app.config import settings
 from app.db import engine
-from app.routes import admin, admin_combos, auth, checkin, checkout, combos, events, tickets, webhooks
+from app.routes import admin, admin_combos, auth, chat, checkin, checkout, combos, events, tickets, webhooks
 
 # Show our own log lines (payments, refunds) in the terminal and Railway's logs.
 # Attached to our "app" logger directly, since uvicorn sets up logging its own way.
@@ -54,6 +54,7 @@ app.include_router(checkin.router)
 app.include_router(admin.router)
 app.include_router(combos.router)
 app.include_router(admin_combos.router)
+app.include_router(chat.router)
 
 
 @app.get('/health')
