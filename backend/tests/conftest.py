@@ -4,6 +4,7 @@ import os
 os.environ['DATABASE_URL'] = 'postgresql+psycopg://localhost/sonsofcaesar_test'
 
 import pytest  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app import models  # noqa: E402,F401
@@ -12,6 +13,8 @@ from app.db import Base, engine  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def fresh_tables():
+    with engine.begin() as conn:
+        conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     yield

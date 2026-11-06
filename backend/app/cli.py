@@ -482,5 +482,16 @@ def list_staff():
             typer.echo(f'  {s.name:<20} {s.email:<32} {s.role.value}{state}{events}')
 
 
+
+@cli.command('index-knowledge')
+def index_knowledge_command():
+    """Update the support agent's search index from backend/knowledge."""
+    from app.knowledge import index_knowledge
+
+    with SessionLocal() as db:
+        result = index_knowledge(db)
+    typer.echo(f"Embedded {result['embedded']}, unchanged {result['unchanged']}, removed {result['removed']}")
+
+
 if __name__ == '__main__':
     cli()

@@ -9,6 +9,7 @@ import secrets
 import uuid
 from datetime import datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     JSON,
     CheckConstraint,
@@ -300,3 +301,21 @@ class StaffEvent(Base):
 
     staff_id: Mapped[int] = mapped_column(ForeignKey('staff.id', ondelete='CASCADE'), primary_key=True)
     event_id: Mapped[int] = mapped_column(ForeignKey('events.id', ondelete='CASCADE'), primary_key=True)
+
+
+# Size of the vectors from the embedding model (see app/knowledge.py)
+EMBEDDING_DIMENSIONS = 1024
+
+
+class KnowledgeChunk(Base):
+    """One section of a support doc (backend/knowledge), searchable by meaning."""
+
+    __tablename__ = 'knowledge_chunks'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str] = mapped_column(String(200))
+    heading: Mapped[str] = mapped_column(String(300))
+    content: Mapped[str] = mapped_column(Text)
+    # Changes when the text or embedding model does, so unchanged sections aren't re-embedded
+    content_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    embedding: Mapped[list[float]] = mapped_column(Vector(EMBEDDING_DIMENSIONS))

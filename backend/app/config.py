@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     backup_r2_access_key_id: str = ''
     backup_r2_secret_access_key: str = ''
     backup_r2_bucket: str = 'sonsofcaesar-backups'
+    # Support agent: embeddings for knowledge search
+    voyage_api_key: str = ''
     # Websites allowed to call the API from the browser, comma-separated
     cors_origins: str = 'http://localhost:5173'
 
