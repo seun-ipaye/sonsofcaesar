@@ -12,6 +12,7 @@ export type Photo = {
 // One entry per party, newest first. `slug` matches the folder name in
 // gallery-source/ ("VOL II" -> "vol-ii") and the address /gallery/<slug>.
 const PARTY_INFO = [
+  { slug: 'nightmare', title: 'NIGHTMARE', date: 'October 30, 2026' },
   { slug: 'vol-ii', title: 'VOL II', date: 'April 3, 2026' },
   { slug: 'on-deck', title: 'ON DECK', date: 'March 6, 2026' },
 ]
