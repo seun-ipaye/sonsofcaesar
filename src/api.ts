@@ -150,7 +150,31 @@ export function formatWhen(iso: string) {
   })
 }
 
-export const money = (cents: number) => `$${(cents / 100).toFixed(2)}`
+// Screenshot mode: open any admin page with ?screenshot to hide money and swap in
+// made-up names, so the dashboard can be shown publicly. ?screenshot=off turns it off.
+export const screenshotMode = (() => {
+  try {
+    const flag = new URLSearchParams(window.location.search).get('screenshot')
+    if (flag !== null) sessionStorage.setItem('screenshot', flag === 'off' ? '' : '1')
+    return sessionStorage.getItem('screenshot') === '1'
+  } catch {
+    return false
+  }
+})()
+
+export const money = (cents: number) => (screenshotMode ? '$•••••' : `$${(cents / 100).toFixed(2)}`)
+
+const FAKE_FIRST = ['Ada', 'Tobi', 'Maya', 'Jordan', 'Zara', 'Kofi', 'Leah', 'Dami', 'Nia', 'Marcus', 'Imani', 'Chris', 'Amara', 'Tayo', 'Jade', 'Malik']
+const FAKE_LAST = ['Okafor', 'Reid', 'Mensah', 'Bello', 'Grant', 'Adeyemi', 'Brooks', 'Lawal', 'Clarke', 'Osei', 'Hayes', 'Eze']
+
+// The same input always gives the same made-up name
+export function fakeName(seed: string) {
+  let h = 0
+  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  return `${FAKE_FIRST[h % FAKE_FIRST.length]} ${FAKE_LAST[(h >>> 8) % FAKE_LAST.length]}`
+}
+
+export const fakeEmail = (name: string) => name.toLowerCase().replace(' ', '.') + '@example.com'
 
 export type StaffMe = { name: string; email: string; role: 'admin' | 'door' | 'partner' }
 

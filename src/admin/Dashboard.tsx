@@ -4,7 +4,10 @@ import {
   api,
   API_URL,
   formatWhen,
+  fakeEmail,
+  fakeName,
   money,
+  screenshotMode,
   timeOnly,
   type AdminEvent,
   type AdminEventListItem,
@@ -223,6 +226,20 @@ function Tile({ label, value, sub }: { label: string; value: string; sub: string
 
 // ---------- attendees ----------
 
+// Screenshot mode: made-up people in place of real ones
+function disguise(a: Attendee): Attendee {
+  const holder = fakeName(a.holder_name + a.code)
+  const buyer = a.buyer_name === a.holder_name ? holder : fakeName(a.buyer_name + a.buyer_email)
+  return {
+    ...a,
+    holder_name: holder,
+    holder_email: a.holder_email ? fakeEmail(holder) : a.holder_email,
+    buyer_name: buyer,
+    buyer_email: fakeEmail(buyer),
+    checked_in_by: a.checked_in_by ? 'door' : a.checked_in_by,
+  }
+}
+
 type Filter = 'all' | 'in' | 'not_in' | 'void'
 
 function Attendees({
@@ -240,7 +257,7 @@ function Attendees({
   const [tier, setTier] = useState('')
 
   const load = useCallback(() => {
-    api<Attendee[]>(`/admin/events/${event.slug}/attendees`).then(setRows)
+    api<Attendee[]>(`/admin/events/${event.slug}/attendees`).then((r) => setRows(screenshotMode ? r.map(disguise) : r))
   }, [event.slug])
   useEffect(() => {
     load()

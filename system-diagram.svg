@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 860" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#bbb"/>
+    </marker>
+    <style>
+      .box { fill: #000; stroke: #fff; stroke-width: 1.2; }
+      .group { fill: none; stroke: #555; stroke-width: 1; stroke-dasharray: 4 4; }
+      .t { fill: #fff; font-size: 16px; }
+      .s { fill: #999; font-size: 12px; }
+      .g { fill: #777; font-size: 11px; letter-spacing: 2px; }
+      .l { stroke: #bbb; stroke-width: 1.2; fill: none; marker-end: url(#a); }
+      .ll { fill: #999; font-size: 11px; }
+    </style>
+  </defs>
+  <rect width="720" height="860" fill="#000"/>
+
+  <!-- visitor -->
+  <rect class="box" x="260" y="30" width="200" height="56"/>
+  <text class="t" x="360" y="56" text-anchor="middle">Visitor</text>
+  <text class="s" x="360" y="74" text-anchor="middle">phone or laptop</text>
+
+  <!-- frontend + media -->
+  <text class="g" x="40" y="138">FRONTEND · VERCEL</text>
+  <rect class="box" x="40" y="148" width="300" height="70"/>
+  <text class="t" x="190" y="178" text-anchor="middle">Website</text>
+  <text class="s" x="190" y="198" text-anchor="middle">React · TypeScript · Vite</text>
+
+  <text class="g" x="380" y="138">MEDIA · CLOUDFLARE R2</text>
+  <rect class="box" x="380" y="148" width="300" height="70"/>
+  <text class="t" x="530" y="178" text-anchor="middle">Gallery photos</text>
+  <text class="s" x="530" y="198" text-anchor="middle">thumbnail + full size, cached</text>
+
+  <path class="l" d="M320 86 L230 146"/>
+  <path class="l" d="M420 86 L620 146"/>
+
+  <!-- backend -->
+  <rect class="group" x="40" y="270" width="640" height="250"/>
+  <text class="g" x="56" y="292">BACKEND · RAILWAY</text>
+
+  <rect class="box" x="70" y="310" width="580" height="80"/>
+  <text class="t" x="360" y="340" text-anchor="middle">API · Python, FastAPI</text>
+  <text class="s" x="360" y="360" text-anchor="middle">tickets · orders · check-in · admin · support chat</text>
+  <text class="s" x="360" y="377" text-anchor="middle">rate limits and daily spend cap on the chat</text>
+
+  <rect class="box" x="70" y="420" width="360" height="76"/>
+  <text class="t" x="250" y="450" text-anchor="middle">PostgreSQL + pgvector</text>
+  <text class="s" x="250" y="470" text-anchor="middle">events · orders · tickets · chat logs</text>
+  <text class="s" x="250" y="486" text-anchor="middle">doc embeddings for search</text>
+
+  <rect class="box" x="460" y="420" width="190" height="76"/>
+  <text class="t" x="555" y="450" text-anchor="middle">Backups</text>
+  <text class="s" x="555" y="470" text-anchor="middle">database copies</text>
+  <text class="s" x="555" y="486" text-anchor="middle">stored in R2</text>
+
+  <path class="l" d="M300 218 L300 306"/>
+  <text class="ll" x="308" y="252">HTTPS</text>
+  <path class="l" d="M250 390 L250 416"/>
+  <path class="l" d="M430 458 L456 458"/>
+
+  <!-- services -->
+  <text class="g" x="46" y="578">PAYMENTS AND EMAIL</text>
+  <rect class="box" x="40" y="596" width="300" height="70"/>
+  <text class="t" x="190" y="626" text-anchor="middle">Stripe</text>
+  <text class="s" x="190" y="646" text-anchor="middle">checkout · refunds</text>
+
+  <rect class="box" x="40" y="684" width="300" height="70"/>
+  <text class="t" x="190" y="714" text-anchor="middle">Resend</text>
+  <text class="s" x="190" y="734" text-anchor="middle">ticket emails with QR codes</text>
+
+  <text class="g" x="386" y="578">SUPPORT CHATBOT</text>
+  <rect class="box" x="380" y="596" width="300" height="70"/>
+  <text class="t" x="530" y="626" text-anchor="middle">Claude · Anthropic</text>
+  <text class="s" x="530" y="646" text-anchor="middle">answers and calls tools</text>
+
+  <rect class="box" x="380" y="684" width="300" height="70"/>
+  <text class="t" x="530" y="714" text-anchor="middle">Voyage AI</text>
+  <text class="s" x="530" y="734" text-anchor="middle">embeddings for doc search</text>
+
+  <!-- api to services -->
+  <rect class="group" x="30" y="556" width="320" height="210"/>
+  <rect class="group" x="370" y="556" width="320" height="210"/>
+  <path class="l" d="M190 520 L190 552" style="marker-start:url(#a)"/>
+  <text class="ll" x="198" y="542">calls out, Stripe webhooks back</text>
+  <path class="l" d="M530 520 L530 552"/>
+
+  <text class="s" x="360" y="815" text-anchor="middle">Order lookups and ticket resends are checked in code, not left to the AI.</text>
+</svg>
